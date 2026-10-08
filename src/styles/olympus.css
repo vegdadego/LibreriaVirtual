@@ -1,0 +1,258 @@
+/* Olympus Scans - Design System (Vanilla CSS con soporte Dark / Light Mode) */
+
+:root, .dark {
+  --brand-darkBg: #0b0f19;
+  --brand-cardBg: #111827;
+  --brand-cardHover: #1f293d;
+  --brand-accent: #d97706;
+  --brand-gold: #ca8a04;
+  --brand-goldHover: #a16207;
+  --brand-goldLight: #fef08a;
+  --brand-border: #1f2937;
+  --brand-pill: #3e3720;
+  --brand-pillText: #fbbf24;
+  --brand-text: #f3f4f6;
+  --brand-text-muted: #9ca3af;
+  --brand-text-subtle: #6b7280;
+  --glass-header: rgba(11, 15, 25, 0.85);
+  --glass-border: rgba(31, 41, 55, 0.8);
+  --modal-overlay: rgba(0, 0, 0, 0.85);
+  --gold-glow: 0 0 15px rgba(217, 119, 6, 0.25);
+  --reader-bg: #000000;
+  --reader-banner-from: #451a03;
+  --reader-banner-to: #030712;
+}
+
+.light {
+  --brand-darkBg: #f8fafc;
+  --brand-cardBg: #ffffff;
+  --brand-cardHover: #f1f5f9;
+  --brand-accent: #d97706;
+  --brand-gold: #b45309;
+  --brand-goldHover: #92400e;
+  --brand-goldLight: #fef08a;
+  --brand-border: #e2e8f0;
+  --brand-pill: #fef3c7;
+  --brand-pillText: #92400e;
+  --brand-text: #0f172a;
+  --brand-text-muted: #475569;
+  --brand-text-subtle: #94a3b8;
+  --glass-header: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(226, 232, 240, 0.9);
+  --modal-overlay: rgba(15, 23, 42, 0.7);
+  --gold-glow: 0 0 15px rgba(217, 119, 6, 0.15);
+  --reader-bg: #1e293b;
+  --reader-banner-from: #78350f;
+  --reader-banner-to: #1e1b4b;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--brand-darkBg);
+  color: var(--brand-text);
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--brand-darkBg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--brand-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
+/* Gradients & Glows */
+.gold-gradient {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #000 !important;
+}
+
+.gold-gradient:hover {
+  filter: brightness(1.1);
+}
+
+.gold-border-glow {
+  box-shadow: var(--gold-glow);
+}
+
+.glass-header {
+  background: var(--glass-header);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Transitions */
+.page-transition {
+  transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
+}
+
+/* Header & Container Utilities */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex-grow: 1;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+@media (min-width: 1024px) {
+  .main-content {
+    padding: 2rem 2rem 4rem;
+  }
+}
+
+/* Grid Layout for Series */
+.series-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .series-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .series-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .series-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+/* Pill buttons for tabs */
+.pill-tab {
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  color: var(--brand-text-muted);
+}
+
+.pill-tab:hover {
+  color: var(--brand-text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pill-tab.active {
+  font-weight: 700;
+  background-color: var(--brand-pill);
+  color: var(--brand-pillText);
+  border-color: rgba(217, 119, 6, 0.35);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Chapter item card */
+.chapter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background-color: var(--brand-cardBg);
+  border: 1px solid var(--brand-border);
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chapter-row:hover {
+  background-color: var(--brand-cardHover);
+  border-color: rgba(217, 119, 6, 0.4);
+  transform: translateX(2px);
+}
+
+.chapter-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chapter-row:hover .chapter-dot {
+  transform: scale(1.3);
+}
+
+/* Webtoon image reader */
+.reader-stream {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: var(--reader-bg);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--brand-border);
+}
+
+.reader-stream img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.md-flex {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .md-flex {
+    display: flex !important;
+  }
+}
+
+/* Modals */
+.olympus-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background-color: var(--modal-overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
