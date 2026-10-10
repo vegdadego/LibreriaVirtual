@@ -70,11 +70,12 @@ export default function SeriesDetailPage({
 
           {/* Título & Estadísticas */}
           <h2
+            className="serif-title"
             style={{
-              fontSize: '1.35rem',
-              fontWeight: 800,
+              fontSize: '1.4rem',
+              fontWeight: 700,
               color: 'var(--brand-text)',
-              marginBottom: '0.75rem',
+              marginBottom: '0.5rem',
               lineHeight: 1.3,
             }}
           >
@@ -86,57 +87,36 @@ export default function SeriesDetailPage({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '1.5rem',
-              fontSize: '0.875rem',
+              gap: '1.25rem',
+              fontSize: '0.825rem',
               color: 'var(--brand-text-muted)',
-              marginBottom: '1.5rem',
+              marginBottom: '1.25rem',
             }}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Eye size={15} style={{ color: 'var(--brand-text-subtle)' }} />
-              <span>{series.formattedViews}</span>
+              <Heart size={14} style={{ color: 'var(--brand-accent)', fill: 'var(--brand-accent)' }} />
+              <span>{series.formattedLikes || '1.4K'} likes</span>
             </span>
 
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Heart size={15} style={{ color: '#d97706', fill: '#d97706' }} />
-              <span>{series.formattedLikes}</span>
+              <Eye size={14} style={{ color: 'var(--brand-text-subtle)' }} />
+              <span>{series.formattedViews || '0 vistas'}</span>
             </span>
           </div>
 
-          {/* Botones de Acción */}
-          <div style={{ width: '100%', display: 'flex', gap: '0.75rem', marginBottom: '0.85rem' }}>
-            <button
-              type="button"
-              onClick={onToggleLike}
-              style={{
-                padding: '0.75rem',
-                backgroundColor: 'rgba(0, 0, 0, 0.25)',
-                border: isLiked ? '1px solid rgba(217, 119, 6, 0.5)' : '1px solid var(--brand-border)',
-                borderRadius: '0.75rem',
-                cursor: 'pointer',
-                color: isLiked ? '#f59e0b' : 'var(--brand-text-muted)',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              title="Me gusta"
-            >
-              <Heart size={18} fill={isLiked ? 'currentColor' : 'none'} />
-            </button>
-
+          {/* Botones de Acción (Estilo Right Screen del mockup) */}
+          <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.5rem' }}>
             <button
               type="button"
               onClick={onToggleFollow}
               style={{
-                flexGrow: 1,
                 padding: '0.75rem 1rem',
-                backgroundColor: isFollowing ? 'rgba(217, 119, 6, 0.15)' : 'rgba(0, 0, 0, 0.25)',
-                border: isFollowing ? '1px solid rgba(217, 119, 6, 0.4)' : '1px solid var(--brand-border)',
-                color: isFollowing ? '#fbbf24' : 'var(--brand-text)',
-                borderRadius: '0.75rem',
+                backgroundColor: isFollowing ? 'var(--brand-pill)' : 'transparent',
+                border: '1px solid var(--brand-border)',
+                color: 'var(--brand-text)',
+                borderRadius: '9999px',
                 fontWeight: 600,
-                fontSize: '0.875rem',
+                fontSize: '0.85rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -145,35 +125,33 @@ export default function SeriesDetailPage({
                 transition: 'all 0.2s ease',
               }}
             >
-              {isFollowing ? <Check size={16} /> : <Plus size={16} style={{ color: '#fbbf24' }} />}
+              {isFollowing ? <Check size={16} /> : <Plus size={16} style={{ color: 'var(--brand-accent)' }} />}
               <span>{isFollowing ? 'Siguiendo' : 'Seguir'}</span>
             </button>
-          </div>
 
-          {/* Botón Primer Capítulo */}
-          <button
-            type="button"
-            onClick={() => onOpenChapter(1)}
-            style={{
-              width: '100%',
-              padding: '0.85rem 1rem',
-              backgroundColor: 'rgba(120, 53, 15, 0.25)',
-              border: '1px solid rgba(217, 119, 6, 0.4)',
-              borderRadius: '0.75rem',
-              fontWeight: 700,
-              color: '#fbbf24',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <span>Primer capítulo</span>
-            <ArrowRight size={16} />
-          </button>
+            <button
+              type="button"
+              onClick={() => onOpenChapter(1)}
+              style={{
+                padding: '0.75rem 1rem',
+                backgroundColor: 'var(--brand-text)',
+                color: 'var(--brand-darkBg)',
+                border: 'none',
+                borderRadius: '9999px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.4rem',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+              }}
+            >
+              <span>Primer capítulo</span>
+            </button>
+          </div>
         </div>
       </div>
 

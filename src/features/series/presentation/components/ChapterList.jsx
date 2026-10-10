@@ -25,10 +25,10 @@ export default function ChapterList({ chapters, onSelectChapter }) {
                   marginBottom: '2px',
                 }}
               >
-                {chap.title}
+                Capítulo {chap.num} - Lorem Ipsum dolor
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--brand-text-subtle)' }}>
-                {chap.scanGroup}
+                Por Scan • {chap.timeAgo}
               </div>
             </div>
           </div>

@@ -59,27 +59,42 @@ export default function Header({ onGoHome, onToggleSearch }) {
                   justifyContent: 'center',
                 }}
               >
-                {/* Logo Icon */}
+                {/* Logo Icon (Minimalista) */}
                 <svg
-                  style={{ width: '20px', height: '20px', color: '#d97706', fill: 'currentColor' }}
+                  style={{ width: '22px', height: '22px', color: 'var(--brand-accent)', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2 }}
                   viewBox="0 0 24 24"
                 >
-                  <path d="M12 2L2 7h20L12 2zm-8 7v10h2V9H4zm5 0v10h2V9H9zm5 0v10h2V9h-2zm5 0v10h2V9h-2zM2 20v2h20v-2H2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m0-16l-6 6m6-6l6 6" />
                 </svg>
               </div>
             </div>
 
-            <span
-              style={{
-                fontSize: '1.25rem',
-                fontWeight: 900,
-                letterSpacing: '0.08em',
-                color: 'var(--brand-text)',
-                textTransform: 'uppercase',
-              }}
-            >
-
-            </span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span
+                style={{
+                  fontSize: '1.05rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.18em',
+                  color: 'var(--brand-text)',
+                  textTransform: 'uppercase',
+                  fontFamily: 'var(--font-sans)',
+                  lineHeight: 1.1,
+                }}
+              >
+                BIBLIOTECA
+              </span>
+              <span
+                style={{
+                  fontSize: '0.62rem',
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  color: 'var(--brand-text-subtle)',
+                  fontWeight: 600,
+                }}
+              >
+                Virtual
+              </span>
+            </div>
           </div>
 
           {/* Navegación Desktop */}

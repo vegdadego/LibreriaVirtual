@@ -1,49 +1,53 @@
 /* Design System (Vanilla CSS con soporte Dark / Light Mode) */
 
 :root, .dark {
-  --brand-darkBg: #0b0f19;
-  --brand-cardBg: #111827;
-  --brand-cardHover: #1f293d;
-  --brand-accent: #d97706;
-  --brand-gold: #ca8a04;
-  --brand-goldHover: #a16207;
-  --brand-goldLight: #fef08a;
-  --brand-border: #1f2937;
-  --brand-pill: #3e3720;
-  --brand-pillText: #fbbf24;
-  --brand-text: #f3f4f6;
-  --brand-text-muted: #9ca3af;
-  --brand-text-subtle: #6b7280;
-  --glass-header: rgba(11, 15, 25, 0.85);
-  --glass-border: rgba(31, 41, 55, 0.8);
-  --modal-overlay: rgba(0, 0, 0, 0.85);
-  --gold-glow: 0 0 15px rgba(217, 119, 6, 0.25);
-  --reader-bg: #000000;
-  --reader-banner-from: #451a03;
-  --reader-banner-to: #030712;
+  --brand-darkBg: #1c1815;
+  --brand-cardBg: #27211c;
+  --brand-cardHover: #332b24;
+  --brand-accent: #c49a6c;
+  --brand-gold: #c49a6c;
+  --brand-goldHover: #d9ad7e;
+  --brand-goldLight: #f5ebe1;
+  --brand-border: #3b322a;
+  --brand-pill: #3a2f26;
+  --brand-pillText: #eedcc9;
+  --brand-text: #f8f4ef;
+  --brand-text-muted: #c8beb3;
+  --brand-text-subtle: #94887b;
+  --glass-header: rgba(28, 24, 21, 0.88);
+  --glass-border: rgba(59, 50, 42, 0.7);
+  --modal-overlay: rgba(20, 16, 14, 0.85);
+  --gold-glow: 0 4px 20px rgba(196, 154, 108, 0.2);
+  --reader-bg: #14100e;
+  --reader-banner-from: #30241b;
+  --reader-banner-to: #1c1815;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Outfit', 'Inter', -apple-system, sans-serif;
 }
 
 .light {
-  --brand-darkBg: #f8fafc;
+  --brand-darkBg: #f9f5f0;
   --brand-cardBg: #ffffff;
-  --brand-cardHover: #f1f5f9;
-  --brand-accent: #d97706;
-  --brand-gold: #b45309;
-  --brand-goldHover: #92400e;
-  --brand-goldLight: #fef08a;
-  --brand-border: #e2e8f0;
-  --brand-pill: #fef3c7;
-  --brand-pillText: #92400e;
-  --brand-text: #0f172a;
-  --brand-text-muted: #475569;
-  --brand-text-subtle: #94a3b8;
-  --glass-header: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(226, 232, 240, 0.9);
-  --modal-overlay: rgba(15, 23, 42, 0.7);
-  --gold-glow: 0 0 15px rgba(217, 119, 6, 0.15);
-  --reader-bg: #1e293b;
-  --reader-banner-from: #78350f;
-  --reader-banner-to: #1e1b4b;
+  --brand-cardHover: #f5eee6;
+  --brand-accent: #a3794d;
+  --brand-gold: #a3794d;
+  --brand-goldHover: #8c653d;
+  --brand-goldLight: #faedd9;
+  --brand-border: #ebe1d5;
+  --brand-pill: #f3e8dc;
+  --brand-pillText: #694b2a;
+  --brand-text: #2c241c;
+  --brand-text-muted: #736556;
+  --brand-text-subtle: #a19282;
+  --glass-header: rgba(249, 245, 240, 0.92);
+  --glass-border: rgba(235, 225, 213, 0.9);
+  --modal-overlay: rgba(44, 36, 28, 0.6);
+  --gold-glow: 0 4px 20px rgba(163, 121, 77, 0.15);
+  --reader-bg: #f4ece2;
+  --reader-banner-from: #eddccb;
+  --reader-banner-to: #f9f5f0;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Outfit', 'Inter', -apple-system, sans-serif;
 }
 
 * {
@@ -53,7 +57,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
   background-color: var(--brand-darkBg);
   color: var(--brand-text);
   overflow-x: hidden;
@@ -73,17 +77,21 @@ body {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #5a4c3f;
 }
 
 /* Gradients & Glows */
 .gold-gradient {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  color: #000 !important;
+  background: linear-gradient(135deg, #c49a6c 0%, #9e7345 100%);
+  color: #ffffff !important;
 }
 
 .gold-gradient:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
+}
+
+.serif-title {
+  font-family: var(--font-serif);
 }
 
 .gold-border-glow {
@@ -233,6 +241,52 @@ body {
   .md-flex {
     display: flex !important;
   }
+}
+
+/* Mobile Floating Bottom Bar */
+.floating-mobile-nav {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2rem);
+  max-width: 440px;
+  background: var(--glass-header);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--brand-border);
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 50;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+}
+
+.floating-nav-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--brand-text-muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.floating-nav-btn.active {
+  color: var(--brand-accent);
+  font-weight: 700;
+}
+
+.floating-nav-btn:hover {
+  color: var(--brand-text);
 }
 
 /* Modals */
