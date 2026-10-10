@@ -23,7 +23,7 @@ export default function Header({ onGoHome, onToggleSearch }) {
     >
       <div style={{ maxWidth: '1280px', width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         
-        {/* Logo & Marca Olympus Scan */}
+        {/* Logo & Marca */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
           <div
             onClick={onGoHome}
@@ -59,7 +59,7 @@ export default function Header({ onGoHome, onToggleSearch }) {
                   justifyContent: 'center',
                 }}
               >
-                {/* Templo Griego Olympus */}
+                {/* Logo Icon */}
                 <svg
                   style={{ width: '20px', height: '20px', color: '#d97706', fill: 'currentColor' }}
                   viewBox="0 0 24 24"

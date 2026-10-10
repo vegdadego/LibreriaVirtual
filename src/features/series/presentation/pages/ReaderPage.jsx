@@ -153,7 +153,7 @@ export default function ReaderPage({
 
       {/* Contenedor Webtoon Stream */}
       <div className="reader-stream">
-        {/* Banner de Créditos Olympus Scan */}
+        {/* Banner de Créditos */}
         <div
           style={{
             background: 'linear-gradient(to right, var(--reader-banner-from), var(--reader-banner-to))',

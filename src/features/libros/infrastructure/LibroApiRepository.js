@@ -6,7 +6,7 @@ import { ENDPOINTS } from '../../../services/api/endpoints';
 let mockLibrosStorage = [
   new Libro({
     id: '1',
-    titulo: 'Cien Años de Soledad',
+    titulo: 'Lorem Ipsum Dolor Sit Amet',
     autor: 'Gabriel García Márquez',
     isbn: '978-0307474728',
     categoria: 'Novela / Realismo Mágico',
@@ -17,7 +17,7 @@ let mockLibrosStorage = [
   }),
   new Libro({
     id: '2',
-    titulo: 'Don Quijote de la Mancha',
+    titulo: 'Consectetur Adipiscing Elit',
     autor: 'Miguel de Cervantes',
     isbn: '978-8424116286',
     categoria: 'Clásico Literario',
@@ -28,7 +28,7 @@ let mockLibrosStorage = [
   }),
   new Libro({
     id: '3',
-    titulo: 'Clean Code: A Handbook of Agile Software Craftsmanship',
+    titulo: 'Sed Do Eiusmod Tempor Incididunt',
     autor: 'Robert C. Martin',
     isbn: '978-0132350884',
     categoria: 'Tecnología y Software',

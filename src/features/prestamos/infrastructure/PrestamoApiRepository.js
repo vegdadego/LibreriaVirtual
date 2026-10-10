@@ -7,7 +7,7 @@ let mockPrestamosStorage = [
   new Prestamo({
     id: 'p-101',
     libroId: '1',
-    libroTitulo: 'Cien Años de Soledad',
+    libroTitulo: 'Lorem Ipsum Dolor Sit Amet',
     usuarioNombre: 'Carlos Mendoza',
     usuarioEmail: 'carlos.m@universidad.edu',
     fechaPrestamo: '2026-09-28',
@@ -17,7 +17,7 @@ let mockPrestamosStorage = [
   new Prestamo({
     id: 'p-102',
     libroId: '2',
-    libroTitulo: 'Don Quijote de la Mancha',
+    libroTitulo: 'Consectetur Adipiscing Elit',
     usuarioNombre: 'María Fernanda Ruiz',
     usuarioEmail: 'maria.ruiz@colegio.edu',
     fechaPrestamo: '2026-09-20',

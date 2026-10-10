@@ -1,5 +1,5 @@
 /**
- * Catálogo centralizado de endpoints de la API (Backend de Olympus Scans).
+ * Catálogo centralizado de endpoints de la API.
  * Desacoplado para que al conectar el backend solo se verifiquen estas rutas.
  */
 

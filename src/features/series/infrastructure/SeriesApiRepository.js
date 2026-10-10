@@ -6,16 +6,16 @@ import { ENDPOINTS } from '../../../services/api/endpoints';
 const INITIAL_MOCK_SERIES = [
   new Series({
     id: 0,
-    title: 'Solo Swordmaster',
+    title: 'Lorem Ipsum Dolor',
     views: '1.2M',
     likes: '1.4K',
     cover: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop',
-    synopsis: 'El único maestro de la espada renace en un mundo al borde del colapso. Con los recuerdos de su vida pasada y la maestría definitiva de la hoja, Solo Swordmaster abrirá un nuevo camino para proteger a la humanidad contra la invasión de seres oscuros.',
+    synopsis: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
     totalChapters: 20,
     chapters: Array.from({ length: 20 }, (_, i) => ({
       num: 20 - i,
       title: `Capítulo ${20 - i}`,
-      scanGroup: 'Por Olympus',
+      scanGroup: 'Por Scan',
       timeAgo: 'Hace 5 días'
     })),
     pages: [
@@ -26,16 +26,16 @@ const INITIAL_MOCK_SERIES = [
   }),
   new Series({
     id: 1,
-    title: 'El hijo menor del Maestro de la Espada',
+    title: 'Consectetur Adipiscing Elit',
     views: '3.5M',
     likes: '8.9K',
     cover: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600&auto=format&fit=crop',
-    synopsis: 'Jin Runcandel era el hijo menor de la familia de espadachines más poderosa. Tras ser desterrado vilmente, hace un pacto divino para retroceder en el tiempo y reclamar el trono de su linaje.',
+    synopsis: 'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
     totalChapters: 45,
     chapters: Array.from({ length: 20 }, (_, i) => ({
       num: 45 - i,
       title: `Capítulo ${45 - i}`,
-      scanGroup: 'Por Olympus',
+      scanGroup: 'Por Scan',
       timeAgo: 'Hace 2 días'
     })),
     pages: [
@@ -45,16 +45,16 @@ const INITIAL_MOCK_SERIES = [
   }),
   new Series({
     id: 2,
-    title: 'La leyenda de cultivación de un regresor',
+    title: 'Sed Ut Perspiciatis Unde',
     views: '890K',
     likes: '3.2K',
     cover: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop',
-    synopsis: 'Atrapado en un ciclo infinito de reencarnaciones, un gran sabio marcial decide romper las leyes del cielo para alcanzar el reino supremo de la inmortalidad.',
+    synopsis: 'Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt neque porro quisquam est.',
     totalChapters: 19,
     chapters: Array.from({ length: 19 }, (_, i) => ({
       num: 19 - i,
       title: `Capítulo ${19 - i}`,
-      scanGroup: 'Por Olympus Scan',
+      scanGroup: 'Por Scan',
       timeAgo: 'Hace 1 día'
     })),
     pages: [
@@ -64,16 +64,16 @@ const INITIAL_MOCK_SERIES = [
   }),
   new Series({
     id: 3,
-    title: 'Acampando en otro mundo buscándole el sazón a la vida',
+    title: 'Quis Autem Vel Eum Iure',
     views: '450K',
     likes: '2.1K',
     cover: 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?q=80&w=600&auto=format&fit=crop',
-    synopsis: 'Reencarnado en un mundo lleno de monstruos peligrosos, nuestro protagonista solo desea disfrutar de la cocina gourmet y la acampada pacífica al aire libre.',
+    synopsis: 'Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur vel illum qui dolorem eum fugiat quo voluptas nulla pariatur.',
     totalChapters: 12,
     chapters: Array.from({ length: 12 }, (_, i) => ({
       num: 12 - i,
       title: `Capítulo ${12 - i}`,
-      scanGroup: 'Por Olympus',
+      scanGroup: 'Por Scan',
       timeAgo: 'Hace 1 semana'
     })),
     pages: [
@@ -82,16 +82,16 @@ const INITIAL_MOCK_SERIES = [
   }),
   new Series({
     id: 4,
-    title: 'El Señor Demonio del Rey Supremo',
+    title: 'Neque Porro Quisquam Est',
     views: '2.1M',
     likes: '5.4K',
     cover: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=600&auto=format&fit=crop',
-    synopsis: 'Tras mil años de letargo, el Rey Demonio despierta en un cuerpo de estudiante de preparatoria en la era moderna.',
+    synopsis: 'At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.',
     totalChapters: 30,
     chapters: Array.from({ length: 30 }, (_, i) => ({
       num: 30 - i,
       title: `Capítulo ${30 - i}`,
-      scanGroup: 'Por Olympus',
+      scanGroup: 'Por Scan',
       timeAgo: 'Hace 3 días'
     })),
     pages: [

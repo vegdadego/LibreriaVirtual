@@ -57,7 +57,7 @@ export default function SearchModal({ isOpen, onClose, onSearch, onSelectSeries 
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por título (ej. Solo Swordmaster)..."
+              placeholder="Buscar por título..."
               style={{
                 width: '100%',
                 backgroundColor: 'transparent',

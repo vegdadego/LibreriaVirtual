@@ -10,7 +10,7 @@ import { useSeries } from './features/series/presentation/hooks/useSeries';
 
 import './styles/olympus.css';
 
-function OlympusApp() {
+function MainApp() {
   const [currentView, setCurrentView] = useState('home'); // 'home' | 'series' | 'reader'
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -128,7 +128,7 @@ function OlympusApp() {
 export default function App() {
   return (
     <ThemeProvider>
-      <OlympusApp />
+      <MainApp />
     </ThemeProvider>
   );
 }
