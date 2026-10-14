@@ -1,18 +1,23 @@
 import React, { useState } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './features/auth/presentation/context/AuthContext';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import HomePage from './features/series/presentation/pages/HomePage';
 import SeriesDetailPage from './features/series/presentation/pages/SeriesDetailPage';
 import ReaderPage from './features/series/presentation/pages/ReaderPage';
 import SearchModal from './features/series/presentation/components/SearchModal';
+import BookLogin from './features/auth/presentation/components/BookLogin/BookLogin';
 import { useSeries } from './features/series/presentation/hooks/useSeries';
 
 import './styles/olympus.css';
 
+
 function MainApp() {
   const [currentView, setCurrentView] = useState('home'); // 'home' | 'series' | 'reader'
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+
 
   const {
     seriesList,
@@ -69,6 +74,7 @@ function MainApp() {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onToggleSearch={() => setIsSearchOpen(true)}
+        onOpenLogin={() => setIsLoginOpen(true)}
       />
 
       {/* Contenido Principal */}
@@ -158,7 +164,7 @@ function MainApp() {
         <button
           type="button"
           className="floating-nav-btn"
-          onClick={() => alert('Perfil de lector')}
+          onClick={() => setIsLoginOpen(true)}
         >
           <svg style={{ width: '20px', height: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -177,6 +183,12 @@ function MainApp() {
         onSearch={searchSeries}
         onSelectSeries={handleOpenSeries}
       />
+
+      {/* Modal de Autenticación (Login / Registro) */}
+      <BookLogin
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+      />
     </div>
   );
 }
@@ -184,7 +196,10 @@ function MainApp() {
 export default function App() {
   return (
     <ThemeProvider>
-      <MainApp />
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
     </ThemeProvider>
   );
 }
+

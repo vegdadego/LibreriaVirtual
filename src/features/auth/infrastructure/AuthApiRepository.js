@@ -10,25 +10,40 @@ const USER_KEY = 'bibliotech_user';
 export class AuthApiRepository extends AuthRepository {
   async login(credentials) {
     try {
-      const response = await apiClient.post(ENDPOINTS.AUTH.LOGIN, credentials);
+      const payload = {
+        email: credentials.email || credentials.correo || credentials.username || credentials.nombre_usuario,
+        password: credentials.password,
+      };
+
+      const response = await apiClient.post(ENDPOINTS.AUTH.LOGIN, payload);
+
       if (response && response.token) {
         storage.set(TOKEN_KEY, response.token);
-        const userObj = new User(response.user || { email: credentials.email, rol: 'Bibliotecario' });
+        const userObj = new User(response.user);
         storage.set(USER_KEY, userObj);
         return { token: response.token, user: userObj };
       }
       return response;
-    } catch {
-      // Fallback offline para desarrollo
-      const demoUser = new User({
-        id: 'usr_demo_1',
-        nombre: 'Bibliotecario Principal',
-        email: credentials.email || 'admin@bibliotech.com',
-        rol: 'Administrador'
-      });
-      storage.set(TOKEN_KEY, 'demo_jwt_token_frontend');
-      storage.set(USER_KEY, demoUser);
-      return { token: 'demo_jwt_token_frontend', user: demoUser };
+    } catch (error) {
+      console.error('Error en login:', error);
+      throw error;
+    }
+  }
+
+  async register(userData) {
+    try {
+      const response = await apiClient.post(ENDPOINTS.AUTH.REGISTER, userData);
+
+      if (response && response.token) {
+        storage.set(TOKEN_KEY, response.token);
+        const userObj = new User(response.user);
+        storage.set(USER_KEY, userObj);
+        return { token: response.token, user: userObj };
+      }
+      return response;
+    } catch (error) {
+      console.error('Error en registro:', error);
+      throw error;
     }
   }
 
@@ -36,7 +51,7 @@ export class AuthApiRepository extends AuthRepository {
     try {
       await apiClient.post('/auth/logout', {});
     } catch {
-      // Ignorar si el backend no responde
+      // Ignorar si el servidor está apagado
     } finally {
       storage.remove(TOKEN_KEY);
       storage.remove(USER_KEY);
@@ -45,14 +60,7 @@ export class AuthApiRepository extends AuthRepository {
 
   getCurrentUser() {
     const raw = storage.get(USER_KEY);
-    if (!raw) {
-      return new User({
-        id: 'usr_demo_1',
-        nombre: 'Administrador Demo',
-        email: 'admin@bibliotech.local',
-        rol: 'Bibliotecario'
-      });
-    }
+    if (!raw) return null;
     return new User(raw);
   }
 }

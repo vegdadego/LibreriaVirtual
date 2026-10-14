@@ -7,8 +7,12 @@ export class LoginUseCase {
   }
 
   async execute(credentials) {
-    if (!credentials.email) {
-      throw new Error('El correo electrónico es requerido para iniciar sesión.');
+    const identifier = credentials.email || credentials.correo || credentials.username || credentials.nombre_usuario;
+    if (!identifier) {
+      throw new Error('El usuario o correo electrónico es requerido.');
+    }
+    if (!credentials.password) {
+      throw new Error('La contraseña es requerida.');
     }
     return await this.authRepository.login(credentials);
   }

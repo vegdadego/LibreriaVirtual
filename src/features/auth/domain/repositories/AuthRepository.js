@@ -7,6 +7,10 @@ export class AuthRepository {
     throw new Error('Método login(credentials) no implementado.');
   }
 
+  async register(userData) {
+    throw new Error('Método register(userData) no implementado.');
+  }
+
   async logout() {
     throw new Error('Método logout() no implementado.');
   }

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { defaultAuthRepository } from '../../infrastructure/AuthApiRepository';
 import { LoginUseCase } from '../../application/LoginUseCase';
+import { RegisterUseCase } from '../../application/RegisterUseCase';
 import { LogoutUseCase } from '../../application/LogoutUseCase';
 import { GetCurrentUserUseCase } from '../../application/GetCurrentUserUseCase';
 
@@ -11,17 +12,29 @@ export function AuthProvider({ children, repository = defaultAuthRepository }) {
   const [loading, setLoading] = useState(true);
 
   const loginUseCase = useMemo(() => new LoginUseCase(repository), [repository]);
+  const registerUseCase = useMemo(() => new RegisterUseCase(repository), [repository]);
   const logoutUseCase = useMemo(() => new LogoutUseCase(repository), [repository]);
   const getCurrentUserUseCase = useMemo(() => new GetCurrentUserUseCase(repository), [repository]);
 
   useEffect(() => {
-    const currentUser = getCurrentUserUseCase.execute();
-    setUser(currentUser);
-    setLoading(false);
+    try {
+      const currentUser = getCurrentUserUseCase.execute();
+      setUser(currentUser);
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   }, [getCurrentUserUseCase]);
 
   const login = async (credentials) => {
     const response = await loginUseCase.execute(credentials);
+    setUser(response.user);
+    return response;
+  };
+
+  const register = async (userData) => {
+    const response = await registerUseCase.execute(userData);
     setUser(response.user);
     return response;
   };
@@ -36,6 +49,7 @@ export function AuthProvider({ children, repository = defaultAuthRepository }) {
     loading,
     isAuthenticated: Boolean(user),
     login,
+    register,
     logout,
   };
 

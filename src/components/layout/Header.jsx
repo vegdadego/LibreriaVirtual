@@ -1,9 +1,12 @@
-import React from 'react';
-import { Home, Layers, Trophy, BookOpen, Search, User, Sun, Moon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Home, Layers, Trophy, BookOpen, Search, User, Sun, Moon, LogOut, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../features/auth/presentation/context/AuthContext';
 
-export default function Header({ onGoHome, onToggleSearch }) {
+export default function Header({ onGoHome, onToggleSearch, onOpenLogin }) {
   const { isDark, toggleTheme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <header
@@ -237,25 +240,147 @@ export default function Header({ onGoHome, onToggleSearch }) {
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
-          {/* Menú de Usuario */}
-          <button
-            type="button"
-            onClick={() => {}}
-            style={{
-              padding: '0.6rem',
-              borderRadius: '0.75rem',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid var(--brand-border)',
-              color: 'var(--brand-text-muted)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            title="Perfil de Usuario"
-          >
-            <User size={18} />
-          </button>
+          {/* Autenticación & Perfil de Usuario */}
+          <div style={{ position: 'relative' }}>
+            {isAuthenticated && user ? (
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '0.75rem',
+                  backgroundColor: 'rgba(217, 119, 6, 0.12)',
+                  border: '1px solid rgba(217, 119, 6, 0.35)',
+                  color: '#f59e0b',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                  transition: 'all 0.2s ease',
+                }}
+                title={`Conectado como ${user.nombre || user.nombre_usuario}`}
+              >
+                <div
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    backgroundColor: '#d97706',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                  }}
+                >
+                  {(user.nombre || user.nombre_usuario || 'U').charAt(0).toUpperCase()}
+                </div>
+                <span>{user.nombre || user.nombre_usuario}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenLogin}
+                style={{
+                  padding: '0.5rem 0.85rem',
+                  borderRadius: '0.75rem',
+                  backgroundColor: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  background: '#d97706',
+                  border: 'none',
+                  color: '#18181b',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                  boxShadow: '0 2px 8px rgba(217, 119, 6, 0.35)',
+                  transition: 'all 0.2s ease',
+                }}
+                title="Iniciar sesión en la biblioteca"
+              >
+                <User size={15} />
+                <span>Ingresar</span>
+              </button>
+            )}
+
+            {/* Menú desplegable cuando está conectado */}
+            {isMenuOpen && isAuthenticated && user && (
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 0.6rem)',
+                  width: '230px',
+                  backgroundColor: 'var(--brand-cardBg, #18181b)',
+                  border: '1px solid var(--brand-border, rgba(255, 255, 255, 0.12))',
+                  borderRadius: '1rem',
+                  padding: '0.85rem',
+                  boxShadow: '0 20px 30px rgba(0, 0, 0, 0.6)',
+                  zIndex: 60,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  animation: 'fadeIn 0.15s ease',
+                }}
+              >
+                <div style={{ borderBottom: '1px solid var(--glass-border, rgba(255, 255, 255, 0.08))', paddingBottom: '0.6rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--brand-text, #fff)' }}>
+                      {user.nombre || user.nombre_usuario}
+                    </span>
+                    <CheckCircle2 size={14} style={{ color: '#4ade80' }} />
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--brand-text-subtle, #a1a1aa)', display: 'block', marginTop: '0.15rem' }}>
+                    {user.email || user.correo}
+                  </span>
+                  <div
+                    style={{
+                      display: 'inline-block',
+                      marginTop: '0.4rem',
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: '999px',
+                      backgroundColor: 'rgba(217, 119, 6, 0.15)',
+                      color: '#f59e0b',
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Rol: {user.tipo_usuario || user.rol || 'lector'}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    setIsMenuOpen(false);
+                  }}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    borderRadius: '0.65rem',
+                    padding: '0.55rem',
+                    color: '#f87171',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                  }}
+                >
+                  <LogOut size={14} />
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
