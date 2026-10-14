@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import { fileURLToPath } from 'node:url';
+// Ruta explícita: `npm run seed` corre desde la raíz y dotenv buscaría ahí el .env.
+dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
 
 import mongoose from 'mongoose';
 import { connectDB } from '../config/db.js';

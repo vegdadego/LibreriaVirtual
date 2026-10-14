@@ -2,7 +2,21 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'bibliotech_secret_key_2026';
+/**
+ * Devuelve la clave con la que se firman y verifican los tokens JWT.
+ *
+ * Se lee en cada uso y no al cargar el módulo: los imports se evalúan antes de
+ * que dotenv.config() cargue server/.env, así que una constante de módulo
+ * quedaría siempre vacía.
+ *
+ * @returns {string} Valor de JWT_SECRET.
+ * @throws {Error} Si JWT_SECRET no está definida.
+ */
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET no está definida en server/.env');
+  return secret;
+};
 
 // POST /api/v1/auth/login
 export const login = async (req, res) => {
@@ -40,20 +54,6 @@ export const login = async (req, res) => {
       isMatch = false;
     }
 
-    // Compatibilidad para usuario inicial y pruebas
-    if (!isMatch) {
-      if (
-        password === user.password_hash ||
-        (user.nombre_usuario === 'GustavoM' && ['123456', 'admin', 'gustavo', 'password', 'uploader'].includes(password))
-      ) {
-        isMatch = true;
-        // Actualizar el hash para futuras validaciones
-        const salt = await bcrypt.genSalt(10);
-        user.password_hash = await bcrypt.hash(password, salt);
-        await user.save();
-      }
-    }
-
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -68,7 +68,7 @@ export const login = async (req, res) => {
         nombre_usuario: user.nombre_usuario,
         tipo_usuario: user.tipo_usuario,
       },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -133,7 +133,7 @@ export const register = async (req, res) => {
         nombre_usuario: savedUser.nombre_usuario,
         tipo_usuario: savedUser.tipo_usuario,
       },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -165,7 +165,7 @@ export const getCurrentUser = async (req, res) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
 
     const user = await User.findById(decoded.id).select('-password_hash');
     if (!user) {
