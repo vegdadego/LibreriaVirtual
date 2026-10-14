@@ -1,0 +1,599 @@
+/* Estructura de la app (barra lateral + panel) y estantes.
+   Usa solo los tokens --brand-* de olympus.css, así respeta el tema claro/oscuro. */
+
+/* ---------- App shell ---------- */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--brand-darkBg);
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  padding: 0.75rem;
+}
+
+.app-main .main-content {
+  flex: 1;
+  max-width: none;
+  margin: 0;
+  padding: 1.25rem 1rem 6rem;
+  background-color: var(--brand-cardBg);
+  border: 1px solid var(--brand-border);
+  border-radius: 1.5rem;
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.25);
+}
+
+@media (min-width: 768px) {
+  .app-main {
+    margin-left: 248px;
+    padding: 1.25rem 1.5rem 1.25rem 1.25rem;
+  }
+
+  .app-main .main-content {
+    padding: 1.75rem 2rem 2.5rem;
+  }
+
+  /* En escritorio la navegación vive en la barra lateral. */
+  .floating-mobile-nav {
+    display: none;
+  }
+}
+
+/* ---------- Barra lateral ---------- */
+.sidenav {
+  display: none;
+  /* fixed y no sticky: html y body tienen overflow-x hidden, lo que anula sticky. */
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  flex-direction: column;
+  gap: 1.75rem;
+  width: 248px;
+  overflow-y: auto;
+  padding: 1.5rem 1rem;
+  border-right: 1px dashed var(--brand-border);
+}
+
+@media (min-width: 768px) {
+  .sidenav {
+    display: flex;
+  }
+}
+
+.sidenav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.25rem;
+  border: none;
+  background: none;
+  color: var(--brand-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidenav-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  box-shadow: var(--gold-glow);
+}
+
+.sidenav-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.sidenav-brand-text strong {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.sidenav-brand-text small {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--brand-text-subtle);
+}
+
+.sidenav-nav,
+.sidenav-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sidenav-footer {
+  margin-top: auto;
+  gap: 0.75rem;
+}
+
+.sidenav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 0.85rem;
+  background: transparent;
+  color: var(--brand-text-muted);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidenav-link:hover {
+  background-color: var(--brand-cardHover);
+  color: var(--brand-text);
+}
+
+.sidenav-link.active {
+  background-color: var(--brand-pill);
+  border-color: var(--brand-border);
+  color: var(--brand-pillText);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.sidenav-user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem;
+  border: 1px solid var(--brand-border);
+  border-radius: 1rem;
+  background-color: var(--brand-cardBg);
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.2);
+}
+
+.sidenav-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: var(--brand-accent);
+  color: #fff;
+  font-weight: 800;
+}
+
+.sidenav-user-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.sidenav-user-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: var(--brand-text);
+}
+
+.sidenav-user-info small {
+  font-size: 0.7rem;
+  text-transform: capitalize;
+  color: var(--brand-text-subtle);
+}
+
+.sidenav-icon-btn {
+  display: flex;
+  padding: 0.4rem;
+  border: none;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: var(--brand-text-muted);
+  cursor: pointer;
+}
+
+.sidenav-icon-btn:hover {
+  background-color: var(--brand-cardHover);
+  color: var(--brand-text);
+}
+
+.sidenav-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 0.85rem;
+  background: linear-gradient(135deg, var(--brand-accent), var(--brand-goldHover));
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: var(--gold-glow);
+  cursor: pointer;
+}
+
+/* ---------- Biblioteca ---------- */
+.library-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem;
+  border: 1px solid var(--brand-border);
+  border-radius: 1rem;
+  background-color: var(--brand-darkBg);
+}
+
+.library-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.library-search {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--brand-border);
+  border-radius: 0.75rem;
+  background-color: var(--brand-cardBg);
+  color: var(--brand-text-subtle);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.library-search:hover {
+  border-color: var(--brand-accent);
+}
+
+.library-grid {
+  margin-top: 1.5rem;
+}
+
+/* ---------- Estantes ---------- */
+.shelf {
+  margin-top: 1.75rem;
+}
+
+.shelf-head {
+  margin-bottom: 0.9rem;
+  padding: 0 0.25rem;
+}
+
+.shelf-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--brand-text);
+}
+
+.shelf-scroll {
+  overflow-x: auto;
+  padding-top: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.shelf-row {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 1.1rem;
+  width: max-content;
+  min-width: 100%;
+  padding: 0 1rem 16px;
+}
+
+/* La repisa: los libros se apoyan sobre su borde superior. */
+.shelf-row::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16px;
+  border: 1px solid var(--brand-border);
+  border-radius: 0.5rem;
+  background-color: var(--brand-pill);
+  box-shadow: 0 8px 14px -8px rgba(0, 0, 0, 0.45);
+}
+
+.shelf-item {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+}
+
+.shelf-book {
+  position: relative;
+  display: block;
+  width: clamp(92px, 11vw, 128px);
+  aspect-ratio: 3 / 4;
+  padding: 0;
+  border: none;
+  border-radius: 0.35rem 0.6rem 0.6rem 0.35rem;
+  overflow: hidden;
+  background-color: var(--brand-pill);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Lomo del libro */
+.shelf-book::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0, rgba(255, 255, 255, 0.14) 4%, transparent 10%);
+}
+
+.shelf-book img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shelf-book:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 20px rgba(0, 0, 0, 0.32);
+}
+
+.shelf-book:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: 3px;
+}
+
+.shelf-progress {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -11px;
+  height: 5px;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.shelf-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--brand-accent);
+}
+
+@media (max-width: 520px) {
+  .library-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ---------- Detalle de serie ---------- */
+.detail {
+  --cover-w: clamp(150px, 22vw, 260px);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.detail-back {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--brand-border);
+  border-radius: 9999px;
+  background-color: var(--brand-cardBg);
+  color: var(--brand-text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.detail-back:hover {
+  color: var(--brand-text);
+}
+
+.detail-top {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: var(--cover-w) minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+  padding: 0 1rem;
+}
+
+.detail-cover {
+  position: relative;
+  width: var(--cover-w);
+  aspect-ratio: 3 / 4;
+  border-radius: 0.35rem 0.7rem 0.7rem 0.35rem;
+  overflow: hidden;
+  background-color: var(--brand-pill);
+}
+
+.detail-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-info {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: 0.5rem 0 1rem;
+}
+
+.detail-title {
+  font-family: var(--font-serif);
+  font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--brand-text);
+}
+
+.detail-sub {
+  font-weight: 700;
+  color: var(--brand-text-muted);
+}
+
+.detail-tagline {
+  max-width: 46ch;
+  font-style: italic;
+  line-height: 1.55;
+  color: var(--brand-text-muted);
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--brand-border);
+}
+
+.detail-read {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  border: none;
+  border-radius: 9999px;
+  background-color: var(--brand-text);
+  color: var(--brand-darkBg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.detail-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--brand-border);
+  border-radius: 50%;
+  background-color: var(--brand-cardBg);
+  color: var(--brand-text-muted);
+  cursor: pointer;
+}
+
+.detail-icon-btn[aria-pressed='true'] {
+  color: var(--brand-accent);
+}
+
+.detail-sheet {
+  position: relative;
+  margin-top: calc(var(--cover-w) * -0.5);
+  padding: calc(var(--cover-w) * 0.5 + 2rem) 2rem 2rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(200px, 1fr);
+  gap: 2.5rem;
+  border: 1px solid var(--brand-border);
+  border-radius: 1.25rem;
+  background-color: var(--brand-darkBg);
+}
+
+.detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  min-width: 0;
+}
+
+.detail-heading {
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--brand-text);
+}
+
+.detail-text {
+  line-height: 1.7;
+  color: var(--brand-text-muted);
+}
+
+.detail-chapters {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 0.6rem;
+  border-radius: 1rem;
+}
+
+.detail-meta dl {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-meta dt {
+  margin-bottom: 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--brand-text);
+}
+
+.detail-meta dd {
+  font-size: 0.9rem;
+  color: var(--brand-text-muted);
+}
+
+.detail-meta dl > div {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--brand-border);
+  border-radius: 0.85rem;
+  background-color: var(--brand-cardBg);
+}
+
+@media (max-width: 767px) {
+  .detail {
+    --cover-w: 170px;
+  }
+
+  .detail-top {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 1.25rem;
+    padding: 0;
+    text-align: center;
+  }
+
+  .detail-actions {
+    justify-content: center;
+  }
+
+  .detail-sheet {
+    margin-top: 0;
+    padding: 1.25rem;
+    grid-template-columns: 1fr;
+  }
+}

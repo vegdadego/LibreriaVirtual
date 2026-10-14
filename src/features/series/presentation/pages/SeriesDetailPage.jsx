@@ -1,8 +1,24 @@
-import React, { useState } from 'react';
-import { Eye, Heart, Plus, Check, ArrowRight } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, ArrowUpRight, Bookmark, Heart } from 'lucide-react';
 import ChapterList from '../components/ChapterList';
 import CommentsSection from '../components/CommentsSection';
 
+/**
+ * Detalle de una serie: portada y acciones arriba; descripción, capítulos,
+ * comentarios y datos de la obra en una hoja debajo.
+ *
+ * @param {Object} props
+ * @param {Object|null} props.series Serie a mostrar.
+ * @param {Array} props.comments Comentarios de la serie.
+ * @param {boolean} props.isLiked Si el usuario marcó "me gusta".
+ * @param {boolean} props.isFollowing Si el usuario sigue la serie.
+ * @param {Function} props.onToggleLike Alterna "me gusta".
+ * @param {Function} props.onToggleFollow Alterna seguir.
+ * @param {Function} props.onOpenChapter Abre el lector en un capítulo.
+ * @param {Function} props.onAddComment Publica un comentario.
+ * @param {Function} props.onBack Vuelve al inicio.
+ * @returns {JSX.Element} La página de detalle.
+ */
 export default function SeriesDetailPage({
   series,
   comments,
@@ -12,222 +28,107 @@ export default function SeriesDetailPage({
   onToggleFollow,
   onOpenChapter,
   onAddComment,
+  onBack,
 }) {
-  const [activeTab, setActiveTab] = useState('chapters'); // 'chapters' | 'synopsis' | 'comments'
-
   if (!series) {
     return <p style={{ color: 'var(--brand-text-muted)' }}>Cargando serie...</p>;
   }
 
+  const tagline = (series.synopsis || '').split(/(?<=[.!?])\s/)[0];
+  const latestChapter = series.chapters?.[0];
+
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '2rem',
-      }}
-    >
-      {/* Columna Izquierda: Sidebar de la Serie */}
-      <div style={{ maxWidth: '380px', width: '100%', margin: '0 auto' }}>
-        <div
-          style={{
-            backgroundColor: 'var(--brand-cardBg)',
-            border: '1px solid var(--brand-border)',
-            borderRadius: '1rem',
-            padding: '1.5rem',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            textAlign: 'center',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
-          }}
-        >
-          {/* Portada */}
-          <div
-            style={{
-              position: 'relative',
-              width: '100%',
-              maxWidth: '260px',
-              aspectRatio: '3/4',
-              borderRadius: '0.75rem',
-              overflow: 'hidden',
-              marginBottom: '1.25rem',
-              border: '1px solid var(--brand-border)',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4)',
-            }}
-          >
-            <img
-              src={series.cover}
-              alt={series.title}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                transition: 'transform 0.4s ease',
-              }}
-            />
-          </div>
+    <article className="detail">
+      <button type="button" className="detail-back" onClick={onBack}>
+        <ArrowLeft size={15} />
+        <span>Biblioteca</span>
+      </button>
 
-          {/* Título & Estadísticas */}
-          <h2
-            className="serif-title"
-            style={{
-              fontSize: '1.4rem',
-              fontWeight: 700,
-              color: 'var(--brand-text)',
-              marginBottom: '0.5rem',
-              lineHeight: 1.3,
-            }}
-          >
-            {series.title}
-          </h2>
+      <div className="detail-top">
+        <div className="detail-cover">
+          <img src={series.cover} alt={`Portada de ${series.title}`} />
+        </div>
 
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '1.25rem',
-              fontSize: '0.825rem',
-              color: 'var(--brand-text-muted)',
-              marginBottom: '1.25rem',
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Heart size={14} style={{ color: 'var(--brand-accent)', fill: 'var(--brand-accent)' }} />
-              <span>{series.formattedLikes || '1.4K'} likes</span>
-            </span>
+        <div className="detail-info">
+          <h1 className="detail-title">{series.title}</h1>
+          <p className="detail-sub">{series.totalChapters} capítulos</p>
+          {tagline && <p className="detail-tagline">{tagline}</p>}
 
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Eye size={14} style={{ color: 'var(--brand-text-subtle)' }} />
-              <span>{series.formattedViews || '0 vistas'}</span>
-            </span>
-          </div>
+          <div className="detail-actions">
+            <button type="button" className="detail-read" onClick={() => onOpenChapter(1)}>
+              <span>Comenzar a leer</span>
+              <ArrowUpRight size={16} />
+            </button>
 
-          {/* Botones de Acción (Estilo Right Screen del mockup) */}
-          <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.5rem' }}>
             <button
               type="button"
+              className="detail-icon-btn"
               onClick={onToggleFollow}
-              style={{
-                padding: '0.75rem 1rem',
-                backgroundColor: isFollowing ? 'var(--brand-pill)' : 'transparent',
-                border: '1px solid var(--brand-border)',
-                color: 'var(--brand-text)',
-                borderRadius: '9999px',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.4rem',
-                transition: 'all 0.2s ease',
-              }}
+              aria-pressed={isFollowing}
+              aria-label={isFollowing ? 'Dejar de seguir' : 'Seguir serie'}
+              title={isFollowing ? 'Siguiendo' : 'Seguir'}
             >
-              {isFollowing ? <Check size={16} /> : <Plus size={16} style={{ color: 'var(--brand-accent)' }} />}
-              <span>{isFollowing ? 'Siguiendo' : 'Seguir'}</span>
+              <Bookmark size={18} fill={isFollowing ? 'currentColor' : 'none'} />
             </button>
 
             <button
               type="button"
-              onClick={() => onOpenChapter(1)}
-              style={{
-                padding: '0.75rem 1rem',
-                backgroundColor: 'var(--brand-text)',
-                color: 'var(--brand-darkBg)',
-                border: 'none',
-                borderRadius: '9999px',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.4rem',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-              }}
+              className="detail-icon-btn"
+              onClick={onToggleLike}
+              aria-pressed={isLiked}
+              aria-label={isLiked ? 'Quitar me gusta' : 'Me gusta'}
+              title="Me gusta"
             >
-              <span>Primer capítulo</span>
+              <Heart size={18} fill={isLiked ? 'currentColor' : 'none'} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Columna Derecha: Tabs y Contenido */}
-      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        {/* Pestañas de Estilo Pill */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.65rem',
-            borderBottom: '1px solid var(--brand-border)',
-            paddingBottom: '0.85rem',
-            flexWrap: 'wrap',
-          }}
-        >
-          <button
-            type="button"
-            className={`pill-tab ${activeTab === 'chapters' ? 'active' : ''}`}
-            onClick={() => setActiveTab('chapters')}
-          >
-            Capítulos
-          </button>
-          <button
-            type="button"
-            className={`pill-tab ${activeTab === 'synopsis' ? 'active' : ''}`}
-            onClick={() => setActiveTab('synopsis')}
-          >
-            Sinópsis
-          </button>
-          <button
-            type="button"
-            className={`pill-tab ${activeTab === 'comments' ? 'active' : ''}`}
-            onClick={() => setActiveTab('comments')}
-          >
-            Comentarios
-          </button>
+      <div className="detail-sheet">
+        <div className="detail-main">
+          <section>
+            <h2 className="detail-heading">Descripción</h2>
+            <p className="detail-text">{series.synopsis}</p>
+          </section>
+
+          <section>
+            <h2 className="detail-heading">Capítulos</h2>
+            <div className="detail-chapters">
+              <ChapterList chapters={series.chapters} onSelectChapter={onOpenChapter} />
+            </div>
+          </section>
+
+          <section className="detail-comments">
+            <CommentsSection comments={comments} onAddComment={onAddComment} />
+          </section>
         </div>
 
-        {/* TAB 1: CAPÍTULOS */}
-        {activeTab === 'chapters' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--brand-text)' }}>
-              {series.totalChapters} capítulos en total
+        <aside className="detail-meta" aria-label="Datos de la obra">
+          <dl>
+            <div>
+              <dt>Capítulos</dt>
+              <dd>{series.totalChapters}</dd>
             </div>
-            <ChapterList chapters={series.chapters} onSelectChapter={onOpenChapter} />
-          </div>
-        )}
-
-        {/* TAB 2: SINÓPSIS */}
-        {activeTab === 'synopsis' && (
-          <div
-            style={{
-              backgroundColor: 'var(--brand-cardBg)',
-              border: '1px solid var(--brand-border)',
-              borderRadius: '1rem',
-              padding: '1.5rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem',
-            }}
-          >
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--brand-text)' }}>
-              Resumen de la Obra
-            </h3>
-            <p style={{ color: 'var(--brand-text-muted)', lineHeight: 1.7, fontSize: '0.95rem' }}>
-              {series.synopsis}
-            </p>
-          </div>
-        )}
-
-        {/* TAB 3: COMENTARIOS */}
-        {activeTab === 'comments' && (
-          <CommentsSection comments={comments} onAddComment={onAddComment} />
-        )}
+            {latestChapter && (
+              <div>
+                <dt>Último capítulo</dt>
+                <dd>
+                  Cap. {latestChapter.num} · {latestChapter.timeAgo}
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt>Vistas</dt>
+              <dd>{series.views}</dd>
+            </div>
+            <div>
+              <dt>Me gusta</dt>
+              <dd>{series.likes}</dd>
+            </div>
+          </dl>
+        </aside>
       </div>
-    </div>
+    </article>
   );
 }

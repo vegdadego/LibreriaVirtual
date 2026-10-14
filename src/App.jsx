@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './features/auth/presentation/context/AuthContext';
-import Header from './components/layout/Header';
-import Footer from './components/layout/Footer';
+import SideNav from './components/layout/SideNav';
 import HomePage from './features/series/presentation/pages/HomePage';
 import SeriesDetailPage from './features/series/presentation/pages/SeriesDetailPage';
 import ReaderPage from './features/series/presentation/pages/ReaderPage';
@@ -11,6 +10,8 @@ import BookLogin from './features/auth/presentation/components/BookLogin/BookLog
 import { useSeries } from './features/series/presentation/hooks/useSeries';
 
 import './styles/olympus.css';
+import './styles/library.css';
+import './styles/skeuomorphic.css';
 
 
 function MainApp() {
@@ -66,29 +67,34 @@ function MainApp() {
   };
 
   return (
-    <div className="app-container">
-      {/* Header Global */}
-      <Header
+    <div className="app-shell">
+      {/* Navegación lateral (escritorio) */}
+      <SideNav
+        currentView={currentView}
         onGoHome={() => {
           setCurrentView('home');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
-        onToggleSearch={() => setIsSearchOpen(true)}
+        onGoLibrary={() => {
+          if (currentSeries) {
+            setCurrentView('series');
+          } else {
+            handleOpenSeries(0);
+          }
+        }}
+        onOpenSearch={() => setIsSearchOpen(true)}
         onOpenLogin={() => setIsLoginOpen(true)}
       />
 
+      <div className="app-main">
       {/* Contenido Principal */}
       <main className="main-content">
         {currentView === 'home' && (
           <HomePage
             seriesList={seriesList}
             featuredSeries={featuredSeries}
+            onOpenSearch={() => setIsSearchOpen(true)}
             onSelectSeries={handleOpenSeries}
-            onReadNow={(id, chap) => {
-              selectSeries(id).then(() => {
-                handleOpenReader(chap);
-              });
-            }}
           />
         )}
 
@@ -102,6 +108,10 @@ function MainApp() {
             onToggleFollow={toggleFollow}
             onOpenChapter={handleOpenReader}
             onAddComment={publishComment}
+            onBack={() => {
+              setCurrentView('home');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 
@@ -116,6 +126,7 @@ function MainApp() {
           />
         )}
       </main>
+      </div>
 
       {/* Barra Flotante Móvil de Navegación */}
       <nav className="floating-mobile-nav" aria-label="Navegación móvil">
@@ -172,9 +183,6 @@ function MainApp() {
           <span>Perfil</span>
         </button>
       </nav>
-
-      {/* Footer */}
-      <Footer />
 
       {/* Modal de Búsqueda */}
       <SearchModal

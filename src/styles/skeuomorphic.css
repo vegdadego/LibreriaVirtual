@@ -1,0 +1,336 @@
+/* Capa skeuomorphic: materiales (papel, cuero, madera) y relieve (teclas, campos hundidos).
+   Se importa después de library.css y solo sobrescribe aspecto. Para volver al diseño plano,
+   quita su import en App.jsx. Usa la paleta --brand-* y añade tokens --sk-*. */
+
+:root,
+.dark {
+  --sk-paper-1: #2f2822;
+  --sk-paper-2: #241e19;
+  --sk-side-1: #2a231d;
+  --sk-side-2: #1e1915;
+  --sk-key-1: #3d332a;
+  --sk-key-2: #2f2720;
+  --sk-key-edge: #17120f;
+  --sk-hi: rgba(255, 255, 255, 0.08);
+  --sk-lo: rgba(0, 0, 0, 0.55);
+  --sk-well: rgba(0, 0, 0, 0.35);
+  --sk-stitch: rgba(196, 154, 108, 0.35);
+  --sk-wood-1: #7d5532;
+  --sk-wood-2: #4f3320;
+  --sk-back: #19140f;
+  /* Grano de cuero: ruido SVG en línea, sin imágenes externas. */
+  --sk-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+.light {
+  --sk-paper-1: #fffaf1;
+  --sk-paper-2: #f1e6d3;
+  --sk-side-1: #f6eddf;
+  --sk-side-2: #e9dbc4;
+  --sk-key-1: #fffdf8;
+  --sk-key-2: #eee1cb;
+  --sk-key-edge: #d3bf9f;
+  --sk-hi: rgba(255, 255, 255, 0.95);
+  --sk-lo: rgba(95, 62, 30, 0.35);
+  --sk-well: rgba(95, 62, 30, 0.22);
+  --sk-stitch: rgba(163, 121, 77, 0.5);
+  --sk-wood-1: #bb8856;
+  --sk-wood-2: #8d6039;
+  --sk-back: #dccaa9;
+  /* Grano de papel: mucho más tenue para no apagar el contraste del texto. */
+  --sk-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.24  0 0 0 0 0.12  0 0 0 .1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ---------- Escritorio y panel ---------- */
+.app-shell {
+  background-image: var(--sk-noise);
+}
+
+.app-main .main-content {
+  position: relative;
+  background-image:
+    var(--sk-noise),
+    linear-gradient(150deg, var(--sk-paper-1), var(--sk-paper-2));
+  border: 1px solid var(--brand-border);
+  box-shadow:
+    0 22px 40px -18px var(--sk-lo),
+    0 2px 0 var(--sk-key-edge),
+    inset 0 1px 0 var(--sk-hi),
+    inset 0 -10px 24px -14px var(--sk-well);
+}
+
+/* Costura del borde, como un cuaderno forrado. */
+.app-main .main-content::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1.5px dashed var(--sk-stitch);
+  border-radius: 1.15rem;
+  pointer-events: none;
+}
+
+/* ---------- Barra lateral ---------- */
+.sidenav {
+  background-image:
+    var(--sk-noise),
+    linear-gradient(180deg, var(--sk-side-1), var(--sk-side-2));
+  border-right: 2px dashed var(--sk-stitch);
+  box-shadow: inset -1px 0 0 var(--sk-hi), 8px 0 18px -12px var(--sk-lo);
+}
+
+.sidenav-logo {
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.35),
+    0 8px 14px -4px var(--sk-lo),
+    inset 0 2px 2px rgba(255, 255, 255, 0.45),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.25);
+}
+
+.sidenav-link:hover {
+  background: linear-gradient(180deg, var(--sk-key-1), var(--sk-key-2));
+  border-color: var(--brand-border);
+  box-shadow: 0 2px 0 var(--sk-key-edge), 0 6px 10px -5px var(--sk-lo), inset 0 1px 0 var(--sk-hi);
+}
+
+/* Activo = tecla presionada */
+.sidenav-link.active {
+  background: var(--sk-well);
+  border-color: transparent;
+  box-shadow: inset 0 3px 6px var(--sk-lo), inset 0 -1px 0 var(--sk-hi);
+  text-shadow: 0 1px 0 var(--sk-hi);
+}
+
+.sidenav-user {
+  background: linear-gradient(180deg, var(--sk-key-1), var(--sk-key-2));
+  box-shadow: 0 2px 0 var(--sk-key-edge), 0 8px 14px -8px var(--sk-lo), inset 0 1px 0 var(--sk-hi);
+}
+
+.sidenav-avatar {
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.4), inset 0 -3px 4px rgba(0, 0, 0, 0.25), 0 2px 4px var(--sk-lo);
+}
+
+.sidenav-login {
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 3px 0 rgba(70, 45, 20, 0.85),
+    0 10px 14px -6px var(--sk-lo),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.sidenav-login:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(70, 45, 20, 0.85), inset 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- Controles ---------- */
+.library-toolbar {
+  background: var(--sk-well);
+  border-color: transparent;
+  box-shadow: inset 0 3px 7px var(--sk-lo), inset 0 -1px 0 var(--sk-hi);
+}
+
+.library-search {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1), transparent 40%), var(--brand-cardBg);
+  box-shadow: inset 0 2px 5px var(--sk-lo), 0 1px 0 var(--sk-hi);
+}
+
+.pill-tab.active {
+  background: linear-gradient(180deg, var(--sk-key-1), var(--sk-key-2));
+  border-color: var(--brand-border);
+  box-shadow: 0 2px 0 var(--sk-key-edge), 0 6px 10px -5px var(--sk-lo), inset 0 1px 0 var(--sk-hi);
+}
+
+.floating-mobile-nav {
+  background-image: linear-gradient(180deg, var(--sk-key-1), var(--sk-key-2));
+  box-shadow: 0 3px 0 var(--sk-key-edge), 0 14px 22px -10px var(--sk-lo), inset 0 1px 0 var(--sk-hi);
+}
+
+/* ---------- Estantes de madera ---------- */
+.shelf-scroll {
+  padding: 1.25rem 0 0;
+}
+
+.shelf-row {
+  gap: 0.9rem;
+  padding: 0 1.25rem 18px;
+}
+
+/* Tabla de madera: cara superior más clara y canto frontal con veta fina. */
+.shelf-row::after {
+  height: 18px;
+  border: 0;
+  border-radius: 2px 2px 4px 4px;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0, rgba(255, 255, 255, 0.4) 1px, transparent 1px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 11px),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--sk-wood-1) 80%, white) 0 6px,
+      var(--sk-wood-1) 6px,
+      var(--sk-wood-2) 100%
+    );
+  box-shadow: 0 8px 10px -6px var(--sk-lo);
+}
+
+/* Libro de tapa dura: canto de páginas a la derecha y sombra sobre la tabla. */
+.shelf-book {
+  border-radius: 2px 4px 4px 2px;
+  box-shadow:
+    2px 0 0 #f1ead9,
+    3px 0 0 #cdc3aa,
+    0 6px 8px -3px rgba(0, 0, 0, 0.45);
+}
+
+/* Bisagra de la tapa y un leve reflejo. */
+.shelf-book::after {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent 40%),
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.28) 0,
+      rgba(255, 255, 255, 0.18) 2.5%,
+      rgba(0, 0, 0, 0.12) 4.5%,
+      transparent 8%
+    );
+}
+
+.shelf-book:hover {
+  box-shadow:
+    2px 0 0 #f1ead9,
+    3px 0 0 #cdc3aa,
+    0 14px 14px -6px rgba(0, 0, 0, 0.5);
+}
+
+.shelf-progress {
+  bottom: -13px;
+  height: 7px;
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.shelf-progress i {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent 60%);
+  background-color: var(--brand-accent);
+  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------- Tarjetas existentes (estilos en línea) ---------- */
+.series-grid .series-card-hover,
+.chapter-row {
+  box-shadow: 0 2px 0 var(--sk-key-edge), 0 12px 18px -10px var(--sk-lo), inset 0 1px 0 var(--sk-hi) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidenav-login {
+    transition: none;
+  }
+}
+
+/* ---------- Detalle de serie ---------- */
+.detail-top::before {
+  content: '';
+  position: absolute;
+  inset: -1rem -1rem 0 -1rem;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 25% 40%, var(--sk-hi), transparent 60%);
+}
+
+/* La portada es un libro de tapa dura apoyado sobre la hoja. */
+.detail-cover {
+  box-shadow:
+    0 30px 30px -14px var(--sk-lo),
+    0 12px 14px -8px rgba(0, 0, 0, 0.5),
+    1px 0 0 rgba(255, 255, 255, 0.15);
+}
+
+.detail-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.22) 0, transparent 38%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.38) 0, rgba(255, 255, 255, 0.16) 3.5%, transparent 9%);
+}
+
+.detail-sheet {
+  background-image:
+    var(--sk-noise),
+    linear-gradient(160deg, var(--sk-paper-1), var(--sk-paper-2));
+  border-color: var(--brand-border);
+  box-shadow:
+    0 2px 0 var(--sk-key-edge),
+    0 22px 32px -20px var(--sk-lo),
+    inset 0 1px 0 var(--sk-hi);
+}
+
+.detail-sheet::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1.5px dashed var(--sk-stitch);
+  border-radius: 0.95rem;
+  pointer-events: none;
+}
+
+.detail-sheet > * {
+  position: relative;
+}
+
+.detail-read {
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--brand-text) 78%, white), var(--brand-text));
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.55),
+    0 12px 16px -8px var(--sk-lo),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.detail-read:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), inset 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.detail-back,
+.detail-icon-btn {
+  background-image: linear-gradient(180deg, var(--sk-key-1), var(--sk-key-2));
+  box-shadow: 0 2px 0 var(--sk-key-edge), 0 8px 12px -6px var(--sk-lo), inset 0 1px 0 var(--sk-hi);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.detail-back:active,
+.detail-icon-btn:active,
+.detail-icon-btn[aria-pressed='true'] {
+  transform: translateY(1px);
+  box-shadow: inset 0 3px 6px var(--sk-lo), inset 0 -1px 0 var(--sk-hi);
+  background-image: none;
+  background-color: var(--sk-well);
+}
+
+/* Lista de capítulos hundida en la hoja */
+.detail-chapters {
+  background: var(--sk-well);
+  box-shadow: inset 0 4px 10px var(--sk-lo), inset 0 -1px 0 var(--sk-hi);
+}
+
+/* Datos de la obra: placas en relieve */
+.detail-meta dl > div {
+  background-image: linear-gradient(180deg, var(--sk-key-1), var(--sk-key-2));
+  box-shadow: 0 2px 0 var(--sk-key-edge), 0 10px 14px -10px var(--sk-lo), inset 0 1px 0 var(--sk-hi);
+}
+
+.detail-comments textarea {
+  box-shadow: inset 0 2px 5px var(--sk-lo) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-read,
+  .detail-back,
+  .detail-icon-btn {
+    transition: none;
+  }
+}
