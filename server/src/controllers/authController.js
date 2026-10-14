@@ -1,22 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-
-/**
- * Devuelve la clave con la que se firman y verifican los tokens JWT.
- *
- * Se lee en cada uso y no al cargar el módulo: los imports se evalúan antes de
- * que dotenv.config() cargue server/.env, así que una constante de módulo
- * quedaría siempre vacía.
- *
- * @returns {string} Valor de JWT_SECRET.
- * @throws {Error} Si JWT_SECRET no está definida.
- */
-const getJwtSecret = () => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error('JWT_SECRET no está definida en server/.env');
-  return secret;
-};
+import { getJwtSecret } from '../config/jwt.js';
 
 // POST /api/v1/auth/login
 export const login = async (req, res) => {

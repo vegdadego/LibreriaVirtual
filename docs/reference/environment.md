@@ -13,6 +13,15 @@ Plantilla: [server/.env.example](../../server/.env.example). El archivo real est
 | `NODE_ENV` | No | `development` o `production`. |
 | `DNS_SERVERS` | No | Servidores DNS separados por comas (ej. `1.1.1.1,8.8.8.8`). Úsala si la conexión a Atlas falla con `querySrv ECONNREFUSED`. |
 
+Carga de PDF (todas opcionales):
+
+| Variable | Por defecto | Descripción |
+|---|---|---|
+| `MAX_PDF_SIZE_MB` | `50` | Tamaño máximo del PDF. Si lo supera responde `413 FILE_TOO_LARGE`. El archivo se mantiene en RAM mientras se procesa. |
+| `MAX_PDF_PAGES` | `2000` | Páginas máximas por PDF (`TOO_MANY_PAGES`). |
+| `UPLOAD_CONCURRENCY` | `2` | PDF que se procesan a la vez; el resto espera en cola. |
+| `JOB_TTL_MINUTES` | `60` | Minutos que se conserva el estado de una carga terminada. |
+
 Las contraseñas con caracteres `@ : / ? # [ ]` deben codificarse en la URI (por ejemplo `@` → `%40`).
 
 ## Frontend (`.env` en la raíz)

@@ -5,6 +5,7 @@ import sagaRoutes from './routes/sagaRoutes.js';
 import authorRoutes from './routes/authorRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
@@ -38,5 +39,8 @@ app.use((req, res) => {
     message: `Ruta no encontrada: ${req.method} ${req.originalUrl}`,
   });
 });
+
+// Respuesta uniforme para errores (debe registrarse al final)
+app.use(errorHandler);
 
 export default app;

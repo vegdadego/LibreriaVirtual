@@ -9,18 +9,26 @@ Backend RESTful con Node.js, Express y Mongoose conectado a la base de datos **`
 1. **`users`**: Administra cuentas de lectores y uploaders.
 2. **`sagas`**: Gestión de sagas y universos literarios.
 3. **`authors`**: Perfil de autores literarios.
-4. **`books`**: Libros, metadatos, referencias a saga/autores y arreglo de páginas con `contenido_escaneado`.
+4. **`books`**: Libros, metadatos, referencias a saga/autores y arreglo de páginas con `contenido_escaneado` (texto de cada página, extraído de los PDF).
 
 ---
 
 ## 🔌 Rutas y Endpoints (`http://localhost:8000/api/v1`)
 
 ### 📖 Libros (`/books`)
-* `GET /api/v1/books` - Listar libros (admite filtros query: `?categoria=...`, `?saga=...`, `?busqueda=...`)
-* `GET /api/v1/books/:id` - Obtener detalle de libro y sus páginas escaneadas
-* `POST /api/v1/books` - Crear / Subir un nuevo libro
-* `PUT /api/v1/books/:id` - Editar información o páginas de un libro
-* `DELETE /api/v1/books/:id` - Eliminar libro
+Detalle completo, formato de respuestas y códigos de error: [docs/reference/api.md](../docs/reference/api.md).
+
+* `POST /api/v1/books/upload` 🔒 - Subir un PDF (`multipart/form-data`, campo `pdf` + metadatos). Responde `202` con un `jobId`; el texto se extrae por página y el PDF no se guarda.
+* `GET /api/v1/books/uploads/:jobId` 🔒 - Estado de la carga: `pendiente`, `procesando`, `completado` o `error`
+* `GET /api/v1/books` - Catálogo paginado sin texto (filtros: `?categoria=`, `?saga=`, `?autor=`, `?busqueda=`, `?page=`, `?limit=`)
+* `GET /api/v1/books/categorias` - Categorías en uso
+* `GET /api/v1/books/:id` - Metadatos del libro y `total_paginas`
+* `GET /api/v1/books/:id/paginas/:numero` - Texto de una página con `anterior` y `siguiente`
+* `POST /api/v1/books` 🔒 - Registrar un libro solo con metadatos
+* `PUT /api/v1/books/:id` 🔒 - Editar metadatos
+* `DELETE /api/v1/books/:id` 🔒 - Eliminar libro
+
+🔒 = requiere `Authorization: Bearer <token>` de un usuario `uploader` o `admin`.
 
 ### 🌌 Sagas (`/sagas`)
 * `GET /api/v1/sagas` - Listar sagas
@@ -60,4 +68,7 @@ npm run server
 
 # Reinicializar y poblar la base de datos con los datos iniciales
 npm run seed
+
+# Pruebas (usan una MongoDB en memoria, nunca la base de Atlas)
+npm --prefix server test
 ```

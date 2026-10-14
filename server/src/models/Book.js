@@ -41,7 +41,9 @@ const contenidoEscaneadoSchema = new mongoose.Schema(
     },
     texto: {
       type: String,
-      required: true,
+      // Una página sin texto (portada, hoja en blanco) se guarda vacía: el libro
+      // debe conservar todas sus páginas y `required` rechaza la cadena vacía.
+      default: '',
     },
   },
   { _id: false }
