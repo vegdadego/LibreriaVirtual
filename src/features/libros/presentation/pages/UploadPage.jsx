@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
-import { Check, CheckCircle2, FileText, Loader2, Lock, RefreshCw, Sparkles, Upload, XCircle } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, CheckCircle2, FileText, Loader2, Lock, RefreshCw, Sparkles, Upload, XCircle } from 'lucide-react';
 import PageState from '../../../../components/common/PageState';
 import DatePicker from '../../../../components/common/DatePicker';
 import { IDIOMAS } from '../../domain/idiomas';
@@ -9,11 +9,16 @@ import { CAMPOS_MAS_DATOS, ETIQUETAS_CAMPOS, sugerenciasParaFormulario } from '.
 import { useAuth } from '../../../auth/presentation/context/AuthContext';
 import { canUploadBooks } from '../../../../components/layout/navLinks';
 import { useUploadLibro } from '../hooks/useUploadLibro';
-import { useAnalisisPdf } from '../hooks/useAnalisisPdf';
-import { imageFileToCover, pdfFirstPageToCover } from '../../../../services/pdf/coverImage';
+import { usePreparacionPdf } from '../hooks/usePreparacionPdf';
+import { useLibroDuplicado } from '../hooks/useLibroDuplicado';
+import { imageFileToCover } from '../../../../services/pdf/coverImage';
 
-/** Debe coincidir con `MAX_PDF_SIZE_MB` del servidor (50 por defecto). */
-const MAX_PDF_MB = 50;
+/** Debe coincidir con `MAX_PDF_SIZE_MB` del servidor (200 por defecto); se cambia con `VITE_MAX_PDF_MB`. */
+const MAX_PDF_MB = Number(import.meta.env.VITE_MAX_PDF_MB) || 200;
+
+/** Desde qué parte de las páginas sin texto se avisa, y desde cuál se avisa que casi no hay texto. */
+const MIN_SIN_TEXTO = 0.1;
+const MAX_SIN_TEXTO = 0.5;
 
 const EMPTY_FORM = {
   titulo: '',
@@ -78,17 +83,26 @@ export default function UploadPage() {
   const [formError, setFormError] = useState(null);
   const fileInput = useRef(null);
 
-  const analisis = useAnalisisPdf();
+  const prep = usePreparacionPdf();
+  const { duplicado } = useLibroDuplicado(
+    {
+      titulo: form.titulo,
+      autores: form.autores,
+      numeroEdicion: form.numero_edicion,
+      idioma: form.idioma,
+      stageId: prep.stageId,
+    },
+    fase === 'inactivo' || fase === 'error'
+  );
   // Campos que la persona editó (la detección no los pisa) y los que rellenó la detección.
   const tocados = useRef(new Set());
   const [detectados, setDetectados] = useState([]);
   const [precisionFecha, setPrecisionFecha] = useState(null);
   const [moreOpen, setMoreOpen] = useState(false);
 
-  // Genera la portada (y su vista previa) cuando cambia el modo o el archivo origen.
+  // Prepara la imagen de portada propia (y su vista previa). La portada del PDF la dibuja el servidor.
   useEffect(() => {
-    const source = coverMode === 'pdf' ? pdf : coverMode === 'imagen' ? coverImage : null;
-    if (!source) {
+    if (coverMode !== 'imagen' || !coverImage) {
       setCover({ status: 'idle', blob: null, url: null, message: null });
       return undefined;
     }
@@ -97,8 +111,7 @@ export default function UploadPage() {
     let objectUrl = null;
     setCover({ status: 'loading', blob: null, url: null, message: null });
 
-    const build = coverMode === 'pdf' ? pdfFirstPageToCover : imageFileToCover;
-    build(source)
+    imageFileToCover(coverImage)
       .then((blob) => {
         if (cancelled) return;
         objectUrl = URL.createObjectURL(blob);
@@ -112,7 +125,25 @@ export default function UploadPage() {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [coverMode, pdf, coverImage]);
+  }, [coverMode, coverImage]);
+
+  /** Aviso si muchas páginas del PDF no traen texto (son imágenes): en la biblioteca se verían vacías. */
+  const totalPaginas = prep.progreso?.total_paginas ?? 0;
+  const paginasSinTexto = prep.paginasSinTexto ?? 0;
+  const faltaTexto = prep.fase === 'listo' && totalPaginas > 0 && paginasSinTexto / totalPaginas >= MIN_SIN_TEXTO;
+  const casiSinTexto = faltaTexto && paginasSinTexto / totalPaginas >= MAX_SIN_TEXTO;
+
+  /** Portada que se muestra y se enviará: la del servidor (PDF), la imagen propia o ninguna. */
+  const coverView = (() => {
+    if (coverMode === 'imagen') return cover;
+    if (coverMode !== 'pdf' || !pdf) return { status: 'idle', blob: null, url: null, message: null };
+    if (prep.portadaUrl) return { status: 'ready', blob: null, url: prep.portadaUrl, message: null };
+    if (prep.fase === 'leyendo' || prep.fase === 'listo') {
+      return { status: 'error', blob: null, url: null, message: 'No se pudo dibujar la portada de este PDF. Elige otra opción.' };
+    }
+    if (prep.fase === 'error') return { status: 'idle', blob: null, url: null, message: null };
+    return { status: 'loading', blob: null, url: null, message: null };
+  })();
 
   if (authLoading) return <PageState kind="loading" title="Cargando..." />;
 
@@ -151,9 +182,8 @@ export default function UploadPage() {
   const setField = (key) => (e) => edit(key, e.target.value);
   const onlyDigits = (key) => (e) => edit(key, e.target.value.replace(/\D/g, ''));
 
-  /** Lee el PDF en el servidor y rellena los campos que la persona no ha editado. */
-  const detectar = async (file) => {
-    const datos = await analisis.analizar(file);
+  /** Rellena los campos que la persona no ha editado con los datos que detectó el servidor. */
+  const aplicarAnalisis = (datos) => {
     if (!datos) return;
     const { valores, detectados: claves, precisionFecha: precision } = sugerenciasParaFormulario(datos, tocados.current);
     setForm((f) => ({ ...f, ...valores }));
@@ -166,7 +196,7 @@ export default function UploadPage() {
     setFormError(null);
     if (!file) {
       setPdf(null);
-      analisis.reiniciar();
+      prep.reiniciar();
       return;
     }
     if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
@@ -189,29 +219,36 @@ export default function UploadPage() {
     });
     setDetectados([]);
     setPrecisionFecha(null);
-    detectar(file);
+    // El PDF se sube una sola vez; el servidor responde con los datos detectados y sigue leyendo el texto.
+    prep.preparar(file).then(aplicarAnalisis);
   };
 
-  /** Vuelve a leer el PDF y sobrescribe todos los campos detectables, también los editados. */
+  /** Vuelve a aplicar los datos detectados y sobrescribe todos los campos, también los editados. */
   const redetectar = () => {
     tocados.current.clear();
-    detectar(pdf);
+    aplicarAnalisis(prep.analisis);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setFormError(null);
     if (!pdf) return setFormError('Elige el archivo PDF del libro.');
+    if (prep.fase === 'subiendo') return setFormError('Espera a que termine de subirse el PDF.');
+    if (prep.fase === 'error' || !prep.stageId) {
+      return setFormError(prep.error || 'No se pudo preparar el PDF. Elige el archivo de nuevo.');
+    }
     if (!form.titulo.trim()) return setFormError('El título es obligatorio.');
-    if (cover.status === 'loading') return setFormError('Espera a que termine de prepararse la portada.');
-    if (coverMode !== 'ninguna' && cover.status === 'error') {
+    if (duplicado) return setFormError('Este libro ya está en la biblioteca.');
+    if (coverView.status === 'loading') return setFormError('Espera a que termine de prepararse la portada.');
+    if (coverMode !== 'ninguna' && coverView.status === 'error') {
       return setFormError('Corrige la portada o elige "Sin portada" para continuar.');
     }
 
     const { titulo, categorias, ...metadatos } = form;
     return subir({
-      pdf,
-      portada: coverMode !== 'ninguna' ? cover.blob : null,
+      stageId: prep.stageId,
+      usarPortadaPdf: coverMode === 'pdf',
+      portada: coverMode === 'imagen' ? cover.blob : null,
       titulo: titulo.trim(),
       metadatos: { ...metadatos, categorias: categorias.join(', ') },
     });
@@ -219,7 +256,7 @@ export default function UploadPage() {
 
   const handleReset = () => {
     reiniciar();
-    analisis.reiniciar();
+    prep.reiniciar();
     tocados.current.clear();
     setDetectados([]);
     setPrecisionFecha(null);
@@ -250,6 +287,9 @@ export default function UploadPage() {
           <button type="button" className="page-state-btn" onClick={handleReset}>
             Subir otro
           </button>
+          <button type="button" className="page-state-btn" onClick={() => navigate('/mis-libros')}>
+            Ir a Mis libros
+          </button>
         </div>
       </div>
     );
@@ -260,6 +300,11 @@ export default function UploadPage() {
 
   return (
     <div className="upload">
+      <Link to="/mis-libros" className="detail-back upload-back">
+        <ArrowLeft size={15} />
+        <span>Mis libros</span>
+      </Link>
+
       <header className="upload-header">
         <h1>Subir un libro</h1>
         <p>
@@ -297,35 +342,62 @@ export default function UploadPage() {
           <section className="form-block">
             <h2>Datos del libro</h2>
 
-            {analisis.fase !== 'inactivo' && (
-              <div className={`analysis-banner ${analisis.fase}`} role="status" aria-live="polite">
-                {analisis.fase === 'analizando' && (
+            {prep.fase !== 'inactivo' && (
+              <div className={`analysis-banner ${prep.fase === 'subiendo' ? 'analizando' : prep.fase}`} role="status" aria-live="polite">
+                {prep.fase === 'subiendo' && (
                   <>
                     <Loader2 size={16} className="spin" aria-hidden="true" />
-                    <span>Leyendo el PDF para detectar los datos del libro...</span>
+                    <span>Subiendo el PDF: {prep.porcentaje} %. Mientras tanto puedes ir rellenando los datos.</span>
+                    <span
+                      className="upload-bar"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={prep.porcentaje}
+                      aria-label="Progreso de la subida del PDF"
+                    >
+                      <i style={{ width: `${prep.porcentaje}%` }} />
+                    </span>
                   </>
                 )}
-                {analisis.fase === 'listo' && (
+                {(prep.fase === 'leyendo' || prep.fase === 'listo') && (
                   <>
                     <Sparkles size={16} aria-hidden="true" />
                     <span>
                       {detectados.length > 0
                         ? `Se detectaron ${detectados.length} datos (${detectados.map((k) => ETIQUETAS_CAMPOS[k]).join(', ')}). Revísalos: son sugerencias y puedes corregirlos.`
-                        : 'No se pudo detectar ningún dato en este PDF. Completa el formulario a mano.'}
+                        : 'No se pudo detectar ningún dato en este PDF. Completa el formulario a mano.'}{' '}
+                      {prep.fase === 'leyendo'
+                        ? prep.progreso?.total_paginas
+                          ? `Leyendo páginas: ${prep.progreso.paginas_procesadas} de ${prep.progreso.total_paginas}.`
+                          : 'Leyendo las páginas...'
+                        : `PDF leído: ${prep.progreso?.total_paginas ?? 0} páginas listas.`}
                     </span>
                   </>
                 )}
-                {analisis.fase === 'error' && (
+                {prep.fase === 'error' && (
                   <>
                     <XCircle size={16} aria-hidden="true" />
-                    <span>{analisis.error} Completa los datos a mano.</span>
+                    <span>{prep.error} Elige otro PDF para continuar.</span>
                   </>
                 )}
-                {pdf && analisis.fase !== 'analizando' && (
+                {pdf && prep.analisis && (
                   <button type="button" className="analysis-retry" onClick={redetectar} disabled={busy}>
                     <RefreshCw size={13} aria-hidden="true" /> Volver a detectar
                   </button>
                 )}
+              </div>
+            )}
+
+            {faltaTexto && (
+              <div className="analysis-banner warning" role="alert">
+                <AlertTriangle size={16} aria-hidden="true" />
+                <span>
+                  {paginasSinTexto} de {totalPaginas} páginas tienen muy poco texto o ninguno: son imágenes o están en blanco.{' '}
+                  {casiSinTexto
+                    ? 'Casi todo este PDF son imágenes (por ejemplo, un PDF escaneado o de diapositivas), así que en la biblioteca se verá casi vacío. Si puedes, sube una versión con texto seleccionable.'
+                    : 'Esas páginas se mostrarán sin contenido en el lector.'}
+                </span>
               </div>
             )}
 
@@ -491,10 +563,10 @@ export default function UploadPage() {
               </div>
 
               <div className="cover-preview" aria-live="polite">
-                {cover.status === 'loading' && <Loader2 size={24} className="spin" />}
-                {cover.status === 'ready' && <img src={cover.url} alt="Vista previa de la portada" />}
-                {cover.status === 'error' && <p role="alert">{cover.message}</p>}
-                {cover.status === 'idle' && (
+                {coverView.status === 'loading' && <Loader2 size={24} className="spin" />}
+                {coverView.status === 'ready' && <img src={coverView.url} alt="Vista previa de la portada" />}
+                {coverView.status === 'error' && <p role="alert">{coverView.message}</p>}
+                {coverView.status === 'idle' && (
                   <p>
                     {coverMode === 'ninguna'
                       ? 'Se usará una tapa con el título.'
@@ -507,6 +579,16 @@ export default function UploadPage() {
             </div>
           </section>
         </fieldset>
+
+        {duplicado && (
+          <p className="form-error upload-duplicate" role="alert">
+            <XCircle size={16} />
+            <span>
+              Este libro ya está en la biblioteca: «{duplicado.titulo}». No se puede subir otra vez.{' '}
+              <Link to={`/libro/${duplicado.libroId}`}>Ver el libro existente</Link>
+            </span>
+          </p>
+        )}
 
         {formError && (
           <p className="form-error" role="alert">
@@ -530,7 +612,7 @@ export default function UploadPage() {
               <Loader2 size={16} className="spin" />
               <span>
                 {fase === 'enviando'
-                  ? 'Enviando el PDF...'
+                  ? 'Enviando los datos del libro...'
                   : percent !== null
                     ? `Procesando páginas: ${progreso.paginas_procesadas} de ${progreso.total_paginas}`
                     : 'Procesando el PDF...'}
@@ -549,9 +631,11 @@ export default function UploadPage() {
           </div>
         )}
 
-        <button type="submit" className="upload-submit" disabled={busy}>
+        <button type="submit" className="upload-submit" disabled={busy || prep.fase === 'subiendo' || prep.fase === 'error' || Boolean(duplicado)}>
           <Upload size={17} />
-          <span>{busy ? 'Subiendo...' : 'Subir libro'}</span>
+          <span>
+            {busy ? 'Guardando...' : prep.fase === 'subiendo' ? 'Subiendo el PDF...' : 'Subir libro'}
+          </span>
         </button>
       </form>
     </div>

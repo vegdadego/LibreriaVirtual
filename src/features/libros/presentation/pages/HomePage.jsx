@@ -54,10 +54,15 @@ export default function HomePage() {
   const canUpload = canUploadBooks(user);
   const continuar = useMemo(
     () =>
-      enCurso.map(({ libro, paginaActual }) => ({
-        ...libro,
-        progress: Math.min(100, Math.round((paginaActual / Math.max(libro.totalPaginas, 1)) * 100)),
-      })),
+      enCurso.map(({ libro, paginaActual }) => {
+        const leidas = Math.min(paginaActual, libro.totalPaginas);
+        return {
+          ...libro,
+          progress: Math.min(100, Math.round((leidas / Math.max(libro.totalPaginas, 1)) * 100)),
+          leidas,
+          total: libro.totalPaginas,
+        };
+      }),
     [enCurso]
   );
   const categoryShelves = useMemo(() => groupByCategory(libros), [libros]);
@@ -105,7 +110,7 @@ export default function HomePage() {
         </div>
 
         {canUpload && (
-          <button type="button" className="library-upload" onClick={() => navigate('/subir')}>
+          <button type="button" className="library-upload" onClick={() => navigate('/mis-libros/subir')}>
             <Upload size={16} />
             <span>Subir libro</span>
           </button>
@@ -164,7 +169,7 @@ export default function HomePage() {
               : 'Cuando alguien suba libros aparecerán aquí.'
           }
           actionLabel={canUpload ? 'Subir un libro' : undefined}
-          onAction={canUpload ? () => navigate('/subir') : undefined}
+          onAction={canUpload ? () => navigate('/mis-libros/subir') : undefined}
         />
       ) : view === 'shelves' ? (
         <>

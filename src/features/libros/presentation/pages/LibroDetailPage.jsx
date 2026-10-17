@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, BookX } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, BookX, SkipForward } from 'lucide-react';
 import BookCover from '../components/BookCover';
 import PageState from '../../../../components/common/PageState';
 import AddToFolderButton from '../../../carpetas/presentation/components/AddToFolderButton';
@@ -52,6 +52,8 @@ export default function LibroDetailPage() {
   const fecha = formatDate(libro.fechaPublicacion);
   const canRead = libro.totalPaginas > 0;
   const resumeAt = Math.min(paginaActual(libro.id), libro.totalPaginas);
+  // Atajo al contenido (detectado automáticamente) mientras no se haya leído hasta ahí.
+  const saltarAlContenido = canRead && Boolean(libro.inicioContenido) && resumeAt < libro.inicioContenido;
 
   return (
     <article className="detail">
@@ -83,6 +85,18 @@ export default function LibroDetailPage() {
               </span>
               <ArrowUpRight size={16} />
             </button>
+
+            {saltarAlContenido && (
+              <button
+                type="button"
+                className="detail-skip"
+                onClick={() => navigate(`/leer/${libro.id}/${libro.inicioContenido}`)}
+                title="Salta la portada, el índice y las páginas previas"
+              >
+                <SkipForward size={16} aria-hidden="true" />
+                <span>Ir al contenido (pág. {libro.inicioContenido})</span>
+              </button>
+            )}
 
             <BookmarkButton libroId={libro.id} titulo={libro.titulo} variant="detail" />
             <AddToFolderButton libro={libro} variant="detail" />

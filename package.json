@@ -8,6 +8,7 @@
     "server": "cd backend && .venv\\Scripts\\python -m uvicorn app.main:app --port 8000",
     "server:dev": "cd backend && .venv\\Scripts\\python -m uvicorn app.main:app --port 8000 --reload",
     "server:test": "cd backend && .venv\\Scripts\\python -m pytest",
+    "test:front": "node --test \"src/**/*.test.js\"",
     "seed": "cd backend && .venv\\Scripts\\python -m scripts.seed --yes",
     "build": "vite build",
     "lint": "oxlint",
@@ -16,7 +17,6 @@
   "dependencies": {
     "jspdf": "^4.2.1",
     "lucide-react": "^1.52.0",
-    "pdfjs-dist": "^6.4.299",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4"

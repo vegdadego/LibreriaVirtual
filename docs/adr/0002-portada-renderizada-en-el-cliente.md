@@ -1,6 +1,7 @@
 # 0002. Portadas: imagen subida o primera página renderizada en el navegador
 
 - Estado: aceptado (el punto 3 de la decisión, dónde se guarda la imagen, lo reemplaza el [ADR 0005](0005-portadas-en-disco.md))
+- Nota: el [ADR 0010](0010-subida-unica-con-preparacion.md) pasa el dibujo de la primera página al servidor (PyMuPDF); el navegador solo reduce las imágenes que la persona elige y `pdfjs-dist` ya no se usa.
 - Fecha: 2026-10-14
 
 ## Contexto y problema

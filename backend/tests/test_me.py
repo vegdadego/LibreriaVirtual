@@ -88,8 +88,8 @@ async def test_unsaving_keeps_progress_and_deleting_the_book_cleans_everything(c
     _, kept = await api(client, "/me/progreso", token=ALICE)
     assert any(b["titulo"] == "Se va a borrar" for b in kept["data"]), "el progreso sigue"
 
-    uploader = make_token("uploader")
-    assert (await api(client, f"/books/{libro['_id']}", method="DELETE", token=uploader))[0] == 200
+    admin = make_token("admin")
+    assert (await api(client, f"/books/{libro['_id']}", method="DELETE", token=admin))[0] == 200
     assert await database.user_books.count_documents({"libro": libro["_id"]}) == 0, "no quedan referencias"
     _, after = await api(client, "/me/progreso", token=ALICE)
     assert not any(b["titulo"] == "Se va a borrar" for b in after["data"])

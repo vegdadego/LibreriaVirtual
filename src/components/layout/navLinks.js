@@ -1,4 +1,4 @@
-import { Bookmark, Download, FolderOpen, Upload } from 'lucide-react';
+import { Bookmark, Download, FolderOpen, Library } from 'lucide-react';
 
 /**
  * Indica si el usuario puede subir libros (`uploader` o `admin`).
@@ -22,6 +22,6 @@ export function getNavLinks(user) {
     { to: '/carpetas', label: 'Carpetas', icon: FolderOpen },
     { to: '/descargas', label: 'Descargados', icon: Download },
   ];
-  if (canUploadBooks(user)) links.push({ to: '/subir', label: 'Subir libro', icon: Upload });
+  if (canUploadBooks(user)) links.push({ to: '/mis-libros', label: 'Mis libros', icon: Library });
   return links;
 }

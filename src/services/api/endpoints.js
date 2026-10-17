@@ -14,6 +14,7 @@ export const ENDPOINTS = {
   // Catálogo y lectura de libros
   BOOKS: {
     BASE: '/books',
+    MINE: '/books/mios',
     DETAIL: (id) => `/books/${id}`,
     CATEGORIES: '/books/categorias',
     PAGE: (id, page) => `/books/${id}/paginas/${page}`,
@@ -21,6 +22,9 @@ export const ENDPOINTS = {
     COVER: (id) => `/books/${id}/portada`,
     UPLOAD: '/books/upload',
     ANALYZE: '/books/analyze',
+    DUPLICATE: '/books/duplicado',
+    STAGE: '/books/stage',
+    STAGE_ONE: (stageId) => `/books/stage/${stageId}`,
     UPLOAD_STATUS: (jobId) => `/books/uploads/${jobId}`,
   },
 

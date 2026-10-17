@@ -14,6 +14,11 @@ from dotenv import load_dotenv
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
+#: Tamaño máximo por defecto de un PDF al importarlo. Solo se guarda el texto (el PDF no se
+#: conserva), así que un archivo grande no engorda la base de datos; el límite protege la RAM del
+#: servidor mientras se procesa. El frontend lo repite en `VITE_MAX_PDF_MB`.
+DEFAULT_MAX_PDF_MB = 200
+
 
 def load_env() -> None:
     """Carga `backend/.env` (sin pisar variables ya definidas en el entorno)."""
@@ -37,6 +42,8 @@ class Limits:
     max_pdf_pages: int
     concurrency: int
     job_ttl_seconds: int
+    #: Cuánto se conserva una preparación (PDF ya leído, a la espera de los datos del formulario).
+    stage_ttl_seconds: int
     #: MongoDB limita cada documento a 16 MB; el texto va embebido en el libro.
     max_content_bytes: int
     #: Procesos que leen PDF en paralelo.
@@ -47,11 +54,12 @@ class Limits:
 
 def get_limits() -> Limits:
     return Limits(
-        max_pdf_bytes=_positive_int("MAX_PDF_SIZE_MB", 50) * 1024 * 1024,
+        max_pdf_bytes=_positive_int("MAX_PDF_SIZE_MB", DEFAULT_MAX_PDF_MB) * 1024 * 1024,
         max_cover_bytes=512 * 1024,
         max_pdf_pages=_positive_int("MAX_PDF_PAGES", 2000),
         concurrency=_positive_int("UPLOAD_CONCURRENCY", 2),
         job_ttl_seconds=_positive_int("JOB_TTL_MINUTES", 60) * 60,
+        stage_ttl_seconds=_positive_int("STAGE_TTL_MINUTES", 20) * 60,
         max_content_bytes=15 * 1024 * 1024,
         pdf_workers=_positive_int("PDF_WORKERS", max(1, min(6, (os.cpu_count() or 2) - 1))),
         parallel_min_pages=_positive_int("PDF_PARALLEL_MIN_PAGES", 120),

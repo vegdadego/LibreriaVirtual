@@ -37,7 +37,7 @@ def _read_pages(doc) -> tuple[list[dict], list[dict], list[dict]]:
     total = doc.page_count
     sample_end = min(total, SAMPLE_PAGES)
     numbers = set(range(1, sample_end + 1)) | set(range(max(sample_end + 1, total - BACK_PAGES + 1), total + 1))
-    pages = [{"pagina": n, "texto": page_text(doc[n - 1])} for n in sorted(numbers)]
+    pages = [{"pagina": n, "texto": page_text(doc[n - 1], with_tables=False, structure=False)} for n in sorted(numbers)]
     front = [p for p in pages if p["pagina"] <= min(total, FRONT_PAGES)]
     sample = [p for p in pages if p["pagina"] <= sample_end]
     back = [p for p in pages if p["pagina"] > total - BACK_PAGES]

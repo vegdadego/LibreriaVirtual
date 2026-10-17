@@ -107,9 +107,29 @@ export function MiBibliotecaProvider({ children, repository = defaultMiBibliotec
     [isAuthenticated, progresoUseCase]
   );
 
+  /**
+   * Quita un libro eliminado de lo guardado y del progreso, y avisa a las listas para recargarse.
+   *
+   * @param {string} libroId
+   */
+  const olvidarLibro = useCallback((libroId) => {
+    const id = String(libroId);
+    setGuardados((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setProgreso((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+    setVersion((v) => v + 1);
+  }, []);
+
   const value = useMemo(
-    () => ({ isGuardado, paginaActual, toggleGuardado, registrarProgreso, version, repository }),
-    [isGuardado, paginaActual, toggleGuardado, registrarProgreso, version, repository]
+    () => ({ isGuardado, paginaActual, toggleGuardado, registrarProgreso, olvidarLibro, version, repository }),
+    [isGuardado, paginaActual, toggleGuardado, registrarProgreso, olvidarLibro, version, repository]
   );
 
   return <MiBibliotecaContext.Provider value={value}>{children}</MiBibliotecaContext.Provider>;
@@ -125,6 +145,7 @@ export function MiBibliotecaProvider({ children, repository = defaultMiBibliotec
  *   paginaActual: (libroId: string) => number,
  *   toggleGuardado: (libroId: string) => Promise<boolean>,
  *   registrarProgreso: (libroId: string, pagina: number) => Promise<void>,
+ *   olvidarLibro: (libroId: string) => void,
  *   version: number,
  *   repository: import('../../domain/repositories/MiBibliotecaRepository').MiBibliotecaRepository
  * }}

@@ -1,8 +1,9 @@
 /**
- * Preparación de portadas en el navegador.
+ * Preparación de portadas propias en el navegador.
  *
- * El servidor guarda la portada tal cual (máx. 512 KB), así que aquí se
- * reduce y se comprime a JPEG antes de enviarla.
+ * La portada que la persona elige como imagen se reduce y comprime a JPEG antes de
+ * enviarla (el servidor la guarda tal cual, máx. 512 KB). La de la primera página del
+ * PDF no pasa por aquí: la dibuja el servidor (ADR 0010).
  */
 
 /** Ancho máximo de la portada generada, en píxeles. */
@@ -75,53 +76,5 @@ export async function imageFileToCover(file) {
     return await canvasToJpeg(drawScaled(bitmap, bitmap.width, bitmap.height));
   } finally {
     bitmap.close();
-  }
-}
-
-/**
- * Dibuja la primera página de un PDF y la devuelve como portada JPEG.
- * `pdfjs-dist` se carga solo cuando se necesita.
- *
- * @param {File} file Archivo PDF.
- * @returns {Promise<Blob>} JPEG listo para enviar como portada.
- * @throws {Error} Si el PDF no se puede abrir o está protegido con contraseña.
- */
-export async function pdfFirstPageToCover(file) {
-  const [pdfjs, { default: workerSrc }] = await Promise.all([
-    import('pdfjs-dist'),
-    import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
-  ]);
-  pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
-
-  const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
-  let doc;
-  try {
-    doc = await task.promise;
-  } catch (error) {
-    throw new Error(
-      error?.name === 'PasswordException'
-        ? 'El PDF está protegido con contraseña.'
-        : 'No se pudo abrir el PDF para generar la portada.'
-    );
-  }
-
-  try {
-    const page = await doc.getPage(1);
-    const base = page.getViewport({ scale: 1 });
-    const scale = Math.min(MAX_WIDTH / base.width, MAX_HEIGHT / base.height, 2);
-    const viewport = page.getViewport({ scale });
-
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(viewport.width);
-    canvas.height = Math.round(viewport.height);
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    await page.render({ canvasContext: ctx, canvas, viewport }).promise;
-    return await canvasToJpeg(canvas);
-  } finally {
-    // Libera el worker; un fallo al limpiar no debe ocultar la portada ya generada.
-    await task.destroy().catch(() => {});
   }
 }

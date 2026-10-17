@@ -32,10 +32,11 @@ Carga de PDF (todas opcionales):
 
 | Variable | Por defecto | Descripción |
 |---|---|---|
-| `MAX_PDF_SIZE_MB` | `50` | Tamaño máximo del PDF. Si lo supera responde `413 FILE_TOO_LARGE`. El archivo se mantiene en RAM mientras se procesa (y en memoria compartida si es grande). |
+| `MAX_PDF_SIZE_MB` | `200` | Tamaño máximo del PDF al importarlo (en la base de datos solo se guarda el texto, no el archivo). Con varias cargas a la vez cuenta unas 3 veces su tamaño en RAM por carga (el archivo, su copia en memoria compartida y el trabajo de lectura): con `UPLOAD_CONCURRENCY=2` y 200 MB, reserva ~1,2 GB. Si lo supera responde `413 FILE_TOO_LARGE`. El archivo se mantiene en RAM mientras se procesa (y en memoria compartida si es grande). |
 | `MAX_PDF_PAGES` | `2000` | Páginas máximas por PDF (`TOO_MANY_PAGES`). |
 | `UPLOAD_CONCURRENCY` | `2` | PDF que se procesan a la vez; el resto espera en cola. |
 | `JOB_TTL_MINUTES` | `60` | Minutos que se conserva el estado de una carga terminada. |
+| `STAGE_TTL_MINUTES` | `20` | Minutos que espera un PDF ya leído (preparado con `POST /books/stage`) a que se envíe el formulario. Mientras espera solo ocupa su texto (hasta 15 MB) y la portada; el PDF se suelta al terminar de leerlo. |
 | `PDF_WORKERS` | `min(6, CPU - 1)` | Procesos que leen PDF en paralelo. Más procesos leen más rápido un PDF grande pero usan más memoria (unos 60 MB cada uno). |
 | `PDF_PARALLEL_MIN_PAGES` | `120` | Desde cuántas páginas un PDF se reparte entre varios procesos; uno más pequeño se lee entero en uno solo. |
 | `PDF_POOL_WARMUP` | `1` | Con `0` no se arrancan los procesos de lectura al iniciar el servidor (se crean en la primera carga). |
@@ -47,5 +48,6 @@ Las contraseñas con caracteres `@ : / ? # [ ]` deben codificarse en la URI (por
 | Variable | Descripción |
 |---|---|
 | `VITE_API_BASE_URL` | URL base de la API. Por defecto `http://localhost:8000/api/v1`. |
+| `VITE_MAX_PDF_MB` | Tamaño máximo de PDF que acepta el formulario de subida, en MB. Por defecto `200`; debe coincidir con `MAX_PDF_SIZE_MB` del servidor. |
 | `VITE_API_TIMEOUT` | Tiempo máximo de espera de cada petición, en ms. Por defecto `15000`. |
 | `VITE_APP_TITLE` | Título de la aplicación. |

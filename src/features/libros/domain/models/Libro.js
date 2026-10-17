@@ -17,6 +17,8 @@ export class Libro {
    * @param {{nombre: string, numero: number}|null} [data.saga]
    * @param {number} [data.totalPaginas]
    * @param {string|null} [data.portadaUrl] URL de la portada, o `null` si no tiene.
+   * @param {number|null} [data.inicioContenido] Página donde empieza el contenido (tras portada, índice y
+   *   prólogo), detectada automáticamente; `null` si no hay nada que saltar.
    */
   constructor({
     id,
@@ -31,6 +33,7 @@ export class Libro {
     saga = null,
     totalPaginas = 0,
     portadaUrl = null,
+    inicioContenido = null,
   }) {
     this.id = String(id);
     this.titulo = titulo;
@@ -44,6 +47,7 @@ export class Libro {
     this.saga = saga;
     this.totalPaginas = totalPaginas;
     this.portadaUrl = portadaUrl;
+    this.inicioContenido = inicioContenido;
   }
 
   /** Autores separados por coma, o `''` si no hay. */
@@ -65,8 +69,9 @@ export class PaginaLibro {
    * @param {number} data.totalPaginas
    * @param {number|null} data.anterior
    * @param {number|null} data.siguiente
+   * @param {number|null} [data.inicioContenido] Página donde empieza el contenido del libro, si se detectó.
    */
-  constructor({ libroId, titulo, pagina, texto, totalPaginas, anterior, siguiente }) {
+  constructor({ libroId, titulo, pagina, texto, totalPaginas, anterior, siguiente, inicioContenido = null }) {
     this.libroId = String(libroId);
     this.titulo = titulo;
     this.pagina = pagina;
@@ -74,5 +79,6 @@ export class PaginaLibro {
     this.totalPaginas = totalPaginas;
     this.anterior = anterior;
     this.siguiente = siguiente;
+    this.inicioContenido = inicioContenido;
   }
 }

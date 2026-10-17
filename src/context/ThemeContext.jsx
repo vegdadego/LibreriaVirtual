@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useLayoutEffect } from 'react';
+import { flushSync } from 'react-dom';
 
 const ThemeContext = createContext(null);
 
@@ -9,7 +10,8 @@ export function ThemeProvider({ children }) {
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   });
 
-  useEffect(() => {
+  // Layout effect: el cambio de clase tiene que estar aplicado cuando termina la transición de tema.
+  useLayoutEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
@@ -22,8 +24,33 @@ export function ThemeProvider({ children }) {
     localStorage.setItem('olympus_theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  /**
+   * Alterna entre modo claro y oscuro. Si el navegador lo permite, el tema nuevo se abre como un círculo
+   * que crece desde el botón que se pulsó hasta cubrir toda la página.
+   *
+   * @param {React.MouseEvent} [event] Clic en el botón; de él sale el círculo.
+   */
+  const toggleTheme = (event) => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    const button = event?.currentTarget;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!document.startViewTransition || reduceMotion || !button?.getBoundingClientRect) {
+      setTheme(next);
+      return;
+    }
+    const { left, top, width, height } = button.getBoundingClientRect();
+    const x = left + width / 2;
+    const y = top + height / 2;
+    const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    const transition = document.startViewTransition(() => flushSync(() => setTheme(next)));
+    transition.ready
+      .then(() =>
+        document.documentElement.animate(
+          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+          { duration: 650, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', pseudoElement: '::view-transition-new(root)' }
+        )
+      )
+      .catch(() => {});
   };
 
   return (

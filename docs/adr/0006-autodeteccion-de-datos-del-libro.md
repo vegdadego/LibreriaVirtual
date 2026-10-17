@@ -1,6 +1,7 @@
 # 0006. Autodetección de los datos del libro con reglas locales
 
 - Estado: aceptado. Nota: tras el [ADR 0007](0007-backend-python.md) las reglas están en `backend/app/services/analysis/` (Python), con las mismas pruebas (`backend/tests/test_analysis.py`); la decisión no cambia.
+- Nota: el [ADR 0010](0010-subida-unica-con-preparacion.md) hace que el PDF se envíe una sola vez: el análisis llega con `POST /books/stage` y `POST /books/analyze` queda como alternativa.
 - Fecha: 2026-10-15
 
 ## Contexto y problema
@@ -30,5 +31,5 @@ Al subir un libro había que escribir a mano autores, categorías, editorial, fe
 - Positivas: sin claves, costos ni envío de contenido a terceros; la persona siempre revisa antes de subir.
 - La sinopsis automática **no es un resumen redactado**: son frases del propio libro y pueden no explicar de qué trata. Con un modelo de lenguaje saldría mejor; `buildSynopsis` es el punto donde enchufarlo (por ejemplo, si existe `ANTHROPIC_API_KEY`) sin cambiar el endpoint.
 - La detección es por reglas: acierta cuando el libro sigue convenciones habituales y falla o calla con maquetaciones raras. Las pruebas usan PDF sintéticos; conviene ampliar las listas (editoriales, palabras clave) con libros reales.
-- El PDF se envía dos veces (al analizar y al subir). Un PDF de 50 MB se transmite 2 veces; en una red lenta el análisis tarda en aparecer.
+- El PDF se envía dos veces (al analizar y al subir). Un PDF de 200 MB se transmite 2 veces; en una red lenta el análisis tarda en aparecer.
 - Un PDF escaneado como imágenes no tiene texto: solo se aprovechan sus metadatos.

@@ -481,24 +481,6 @@
   outline-offset: 3px;
 }
 
-.shelf-progress {
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: -11px;
-  height: 5px;
-  border-radius: 9999px;
-  background-color: rgba(0, 0, 0, 0.25);
-  overflow: hidden;
-}
-
-.shelf-progress i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background-color: var(--brand-accent);
-}
-
 @media (max-width: 520px) {
   .library-toolbar {
     flex-direction: column;

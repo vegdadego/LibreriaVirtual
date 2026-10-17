@@ -1,26 +1,115 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, FileX, Minus, Plus, Type } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, FileX, Minus, Plus, SkipForward, Type } from 'lucide-react';
 import PageState from '../../../../components/common/PageState';
 import { useLibroPagina } from '../hooks/useLibroPagina';
 import { useMiBiblioteca } from '../../../biblioteca/presentation/context/MiBibliotecaContext';
 import { storage } from '../../../../utils/storage';
+import { parsePageBlocks } from '../../../../utils/pageContent';
 
 const PREFS_KEY = 'libreria_reader_prefs';
 const MIN_SIZE = 14;
 const MAX_SIZE = 30;
 
 /**
- * Divide el texto de una página en párrafos (separados por línea en blanco).
+ * Dibuja un bloque de una página: tabla, lista, índice con puntos guía, líneas sueltas o prosa.
  *
- * @param {string} texto
- * @returns {string[]}
+ * @param {Object} props
+ * @param {ReturnType<typeof parsePageBlocks>[number]} props.block
+ * @returns {JSX.Element}
  */
-function toParagraphs(texto) {
-  return (texto || '')
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
+function BlockBody({ block }) {
+  if (block.type === 'figure') {
+    return (
+      <figure className="reader-figure">
+        {block.caption && <figcaption>{block.caption}</figcaption>}
+        <p className="reader-figure-note">
+          {block.caption ? 'La imagen de esta figura no se muestra.' : 'Aquí hay una figura que es solo una imagen; no se muestra.'}
+        </p>
+      </figure>
+    );
+  }
+  if (block.type === 'heading') {
+    const Heading = block.level === 1 ? 'h2' : 'h3';
+    return <Heading className={`reader-heading level-${block.level}`}>{block.text}</Heading>;
+  }
+  if (block.type === 'table') {
+    return (
+      <div className="reader-table-wrap" tabIndex={0} role="region" aria-label="Tabla">
+        <table className="reader-table">
+          <thead>
+            <tr>
+              {block.header.map((cell, i) => (
+                <th key={i}>{cell}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {block.rows.map((row, r) => (
+              <tr key={r}>
+                {row.map((cell, c) => (
+                  <td key={c}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+  if (block.type === 'list') {
+    const List = block.ordered ? 'ol' : 'ul';
+    return (
+      <List
+        className={`reader-list${block.ordered ? ' ordered' : ''}${block.letters ? ' letters' : ''}`}
+        start={block.ordered && block.start ? block.start : undefined}
+        type={block.letters ? 'a' : undefined}
+      >
+        {block.items.map((item, i) => (
+          <li key={i}>{item.text}</li>
+        ))}
+      </List>
+    );
+  }
+  if (block.type === 'toc') {
+    return (
+      <div className="reader-block">
+        {block.intro.length > 0 && <p className="reader-paragraph reader-lines">{block.intro.join('\n')}</p>}
+        <ul className="reader-toc">
+          {block.rows.map((row, j) => (
+            <li key={j} className="reader-toc-row">
+              <span className="reader-toc-title">{row.title}</span>
+              {row.page && <span className="reader-toc-leader" aria-hidden="true" />}
+              {row.page && <span className="reader-toc-page">{row.page}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  return <p className={`reader-paragraph${block.type === 'lines' ? ' reader-lines' : ''}`}>{block.text}</p>;
+}
+
+/**
+ * Un bloque de la página; los rótulos que el libro pone en el margen salen en una columna a su lado.
+ *
+ * @param {Object} props
+ * @param {ReturnType<typeof parsePageBlocks>[number]} props.block
+ * @param {boolean} props.withMargin La página tiene rótulos de margen: todos los bloques reservan la columna.
+ * @returns {JSX.Element}
+ */
+function PageBlock({ block, withMargin }) {
+  if (!withMargin) return <BlockBody block={block} />;
+  return (
+    <div className="reader-row">
+      <aside className="reader-margin" aria-label="Nota al margen">
+        {block.notes?.map((note, i) => (
+          <span key={i}>{note}</span>
+        ))}
+      </aside>
+      <div className="reader-row-body">{block.type === 'lines' && !block.text ? null : <BlockBody block={block} />}</div>
+    </div>
+  );
 }
 
 /**
@@ -99,7 +188,11 @@ export default function ReaderPage() {
     goTo(Math.min(Math.max(target, 1), pagina.totalPaginas));
   };
 
-  const paragraphs = pagina ? toParagraphs(pagina.texto) : [];
+  const blocks = pagina ? parsePageBlocks(pagina.texto) : [];
+  const withMargin = blocks.some((block) => block.notes?.length);
+  // Si el libro tiene portada, índice y prólogo antes del contenido, ofrece saltar directo a él.
+  const inicioContenido = pagina?.inicioContenido;
+  const puedeSaltar = Boolean(inicioContenido) && numero < inicioContenido;
   const setSize = (delta) =>
     setPrefs((p) => ({ ...p, size: Math.min(MAX_SIZE, Math.max(MIN_SIZE, p.size + delta)) }));
 
@@ -145,6 +238,13 @@ export default function ReaderPage() {
         </div>
       </div>
 
+      {puedeSaltar && (
+        <button type="button" className="reader-skip" onClick={() => goTo(inicioContenido)}>
+          <SkipForward size={16} aria-hidden="true" />
+          <span>Ir al contenido (página {inicioContenido})</span>
+        </button>
+      )}
+
       <article
         className="reader-sheet"
         style={{ fontSize: `${prefs.size}px`, fontFamily: prefs.serif ? 'var(--font-serif)' : 'var(--font-sans)' }}
@@ -152,15 +252,15 @@ export default function ReaderPage() {
       >
         {loading && !pagina ? (
           <PageState kind="loading" title="Cargando página..." />
-        ) : paragraphs.length === 0 ? (
-          <p className="reader-empty">Página en blanco.</p>
+        ) : blocks.length === 0 ? (
+          <p className="reader-empty">
+            Esta página no tiene texto.
+            <small>Puede ser una imagen o una hoja en blanco del libro original.</small>
+          </p>
         ) : (
-          paragraphs.map((p, i) => (
-            <p key={i} className="reader-paragraph">
-              {p}
-            </p>
-          ))
+          blocks.map((block, i) => <PageBlock key={i} block={block} withMargin={withMargin} />)
         )}
+        {pagina && <footer className="reader-folio">— {pagina.pagina} —</footer>}
       </article>
 
       <nav className="reader-nav" aria-label="Navegación de páginas">

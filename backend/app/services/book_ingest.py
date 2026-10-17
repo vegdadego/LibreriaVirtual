@@ -10,7 +10,9 @@ from bson import ObjectId
 from ..db import LOOSE_COLLATION, get_db
 from ..errors import AppError
 from ..http import utcnow
+from ..security import CurrentUser
 from ..text_utils import fold_text, parse_list
+from .analysis.content_start import detect_content_start
 from .cover_storage import delete_cover, save_cover
 
 
@@ -127,25 +129,45 @@ async def resolve_relations(meta: dict) -> dict:
     return resolved
 
 
-async def find_duplicate_book(meta: dict) -> dict | None:
-    """Busca un libro ya registrado con el mismo título, edición e idioma."""
-    return await get_db().books.find_one(
-        {
-            "titulo": meta["titulo"],
-            "numero_edicion": meta.get("numero_edicion", 1),
-            "idioma": meta.get("idioma", "es"),
-        },
-        {"_id": 1},
-        collation=LOOSE_COLLATION,
-    )
+async def find_duplicate_book(
+    meta: dict, exclude_id: ObjectId | None = None, content_hash: str | None = None
+) -> dict | None:
+    """Busca un libro ya registrado que sea el mismo que `meta`: mismo título, edición e idioma
+    (sin distinguir mayúsculas ni acentos) y, si se conocen los autores, al menos un autor en común
+    (o el registrado no tiene autores); o el mismo PDF (`content_hash`, SHA-256 del archivo).
+    `exclude_id` deja fuera un libro (el que se está editando)."""
+    identity: dict = {
+        "titulo": meta["titulo"],
+        "numero_edicion": meta.get("numero_edicion", 1),
+        "idioma": meta.get("idioma", "es"),
+    }
+    names = [author["nombre"] for author in meta.get("autores") or [] if author.get("nombre")]
+    if names:
+        identity["$or"] = [{"autores.nombre": {"$in": names}}, {"autores": {"$size": 0}}]
+    query: dict = {"$or": [identity, {"hash_pdf": content_hash}]} if content_hash else identity
+    if exclude_id is not None:
+        query = {"$and": [query, {"_id": {"$ne": exclude_id}}]}
+    return await get_db().books.find_one(query, {"_id": 1, "titulo": 1}, collation=LOOSE_COLLATION)
 
 
-def _duplicate_error(existing: dict) -> AppError:
+def ensure_can_manage(user: CurrentUser, book: dict) -> None:
+    """Deja pasar a un `admin` o a quien subió el libro (`subido_por`); si no, `NOT_BOOK_OWNER` (403).
+    Un libro sin `subido_por` (anterior a este campo) solo lo gestiona un admin."""
+    if user.tipo_usuario == "admin":
+        return
+    owner = book.get("subido_por")
+    if owner is None or str(owner) != user.id:
+        raise AppError(403, "NOT_BOOK_OWNER", "Solo quien subió este libro puede modificarlo.")
+
+
+def duplicate_error(existing: dict) -> AppError:
+    """`DUPLICATE_BOOK` (409) con el id y el título del libro que ya existe."""
     return AppError(
         409,
         "DUPLICATE_BOOK",
-        "Ya existe un libro con ese título, edición e idioma.",
+        "Este libro ya está en la biblioteca (mismo título, edición, idioma y autor, o el mismo PDF).",
         libro_id=str(existing["_id"]),
+        titulo=existing.get("titulo"),
     )
 
 
@@ -168,15 +190,28 @@ def new_book_document(meta: dict, pages: list[dict] | None = None) -> dict:
     }
 
 
-async def save_book_with_pages(meta: dict, pages: list[dict], cover: dict | None = None) -> dict:
+async def save_book_with_pages(
+    meta: dict,
+    pages: list[dict],
+    cover: dict | None = None,
+    owner_id: ObjectId | None = None,
+    content_hash: str | None = None,
+) -> dict:
     """Registra un libro con todas sus páginas en una sola inserción (un único documento, así
     la operación es atómica). La portada se escribe en disco antes de guardar y se borra si el
-    guardado falla. Lanza `DUPLICATE_BOOK` (409) si el libro ya está registrado."""
-    duplicate = await find_duplicate_book(meta)
+    guardado falla. `owner_id` es quien lo sube (`subido_por`). Lanza `DUPLICATE_BOOK` (409) si
+    el libro ya está registrado (ver `find_duplicate_book`); `content_hash` es el SHA-256 del PDF."""
+    duplicate = await find_duplicate_book(meta, content_hash=content_hash)
     if duplicate:
-        raise _duplicate_error(duplicate)
+        raise duplicate_error(duplicate)
 
     document = new_book_document(await resolve_relations(meta), pages)
+    if owner_id is not None:
+        document["subido_por"] = owner_id
+    if content_hash:
+        document["hash_pdf"] = content_hash  # detecta el mismo PDF subido de nuevo
+    # 0 = no se detectaron páginas previas que saltar (ver `analysis/content_start.py`).
+    document["inicio_contenido"] = detect_content_start(pages) or 0
     document = {k: v for k, v in document.items() if not (v is None and k in ("fecha_publicacion", "empresa_edicion"))}
     document["_id"] = ObjectId()
     if cover:

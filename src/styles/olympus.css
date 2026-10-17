@@ -21,6 +21,12 @@
   --reader-bg: #14100e;
   --reader-banner-from: #30241b;
   --reader-banner-to: #1c1815;
+  /* La hoja del lector es de papel en ambos temas (ver .reader-sheet) */
+  --paper-bg: linear-gradient(180deg, #d8cfba 0%, #cfc4aa 100%);
+  --paper-ink: #2b2218;
+  --paper-ink-soft: #6a5b47;
+  --paper-edge: #bfb398;
+  --paper-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 10px 24px -6px rgba(0, 0, 0, 0.45), 0 24px 48px -12px rgba(0, 0, 0, 0.35);
   --font-serif: 'Playfair Display', Georgia, serif;
   --font-sans: 'Outfit', 'Inter', -apple-system, sans-serif;
 }
@@ -46,6 +52,11 @@
   --reader-bg: #f4ece2;
   --reader-banner-from: #eddccb;
   --reader-banner-to: #f9f5f0;
+  --paper-bg: linear-gradient(180deg, #fffaf0 0%, #f7eedb 100%);
+  --paper-ink: #2b2218;
+  --paper-ink-soft: #7a6a55;
+  --paper-edge: #e6d9be;
+  --paper-shadow: 0 1px 2px rgba(60, 40, 20, 0.15), 0 10px 24px -8px rgba(60, 40, 20, 0.25), 0 24px 48px -16px rgba(60, 40, 20, 0.2);
   --font-serif: 'Playfair Display', Georgia, serif;
   --font-sans: 'Outfit', 'Inter', -apple-system, sans-serif;
 }

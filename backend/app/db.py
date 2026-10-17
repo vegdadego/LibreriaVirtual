@@ -80,6 +80,8 @@ async def ensure_indexes(db: AsyncDatabase | None = None) -> None:
         ("folders", [("usuario", ASCENDING), ("nombre", ASCENDING)], {"unique": True, "collation": FOLDER_COLLATION}),
         ("folders", [("usuario", ASCENDING), ("updatedAt", DESCENDING)], {}),
         ("folders", [("libros", ASCENDING)], {}),
+        ("books", [("subido_por", ASCENDING), ("createdAt", DESCENDING)], {}),
+        ("books", [("hash_pdf", ASCENDING)], {"sparse": True}),
     ]
     for collection, keys, options in specs:
         try:

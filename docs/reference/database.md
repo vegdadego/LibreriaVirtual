@@ -19,6 +19,9 @@ Esquema de la colección (sin modelo ODM; el backend en Python usa documentos y 
 | `saga` | { `id_saga?`, `nombre_saga`, `numero_en_saga` } | |
 | `contenido_escaneado` | [{ `pagina`, `texto` }] | Texto de cada página, en orden, con `pagina` desde 1. Va embebido en el libro. |
 | `portada` | { `archivo`, `mime`, `data?` } | Opcional. `archivo` es el nombre (`<id del libro>.jpg/png/webp`) de la imagen en `backend/uploads/portadas`; `mime` su formato (JPEG, PNG o WebP, hasta 512 KB, ver [ADR 0002](../adr/0002-portada-renderizada-en-el-cliente.md) y [ADR 0005](../adr/0005-portadas-en-disco.md)). `data` (Buffer) solo existe en libros anteriores, que guardaban la imagen en el documento: `python -m scripts.migrate_covers` la pasa a disco y la borra. |
+| `subido_por` | ObjectId → `users` | Quien subió el libro: es el único (junto con un `admin`) que puede editarlo o eliminarlo. Opcional: los libros anteriores a este campo no lo tienen; `python -m scripts.assign_owner <usuario>` se lo asigna a un usuario (ver [ADR 0009](../adr/0009-propiedad-de-libros.md)). No viaja en las respuestas de la API. Índice `{ subido_por, createdAt }`. |
+| `hash_pdf` | String | SHA-256 del PDF con que se subió el libro (los anteriores no lo tienen); sirve para rechazar el mismo archivo subido otra vez. No viaja en la API. Índice disperso. |
+| `inicio_contenido` | Number | Página donde empieza el contenido, tras portada, créditos, índice y prólogo (ver [ADR 0011](../adr/0011-contenido-tablas-y-listas.md)). `0` = no se detectó nada que saltar. Se calcula al subir el libro; los libros anteriores lo reciben la primera vez que se consultan (`ensure_content_start`). |
 | `createdAt`, `updatedAt` | Date | Automáticos. |
 
 ### Cambio: `texto` puede ser vacío

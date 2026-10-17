@@ -37,6 +37,19 @@ export class LibroConDescargasRepository extends LibroRepository {
     return this.api.list(filtros);
   }
 
+  listMine(filtros) {
+    return this.api.listMine(filtros);
+  }
+
+  update(id, datos) {
+    return this.api.update(id, datos);
+  }
+
+  async remove(id) {
+    await this.api.remove(id);
+    this.forget(id);
+  }
+
   getCategories() {
     return this.api.getCategories();
   }
@@ -51,6 +64,22 @@ export class LibroConDescargasRepository extends LibroRepository {
 
   analyze(pdf) {
     return this.api.analyze(pdf);
+  }
+
+  stage(pdf, options) {
+    return this.api.stage(pdf, options);
+  }
+
+  getStageStatus(stageId) {
+    return this.api.getStageStatus(stageId);
+  }
+
+  findDuplicate(datos) {
+    return this.api.findDuplicate(datos);
+  }
+
+  discardStage(stageId) {
+    return this.api.discardStage(stageId);
   }
 
   getUploadStatus(jobId) {
@@ -86,6 +115,8 @@ export class LibroConDescargasRepository extends LibroRepository {
       totalPaginas: total,
       anterior: index > 0 ? paginas[index - 1].pagina : null,
       siguiente: index < total - 1 ? paginas[index + 1].pagina : null,
+      // Los libros descargados tras esta función guardan su ficha con el inicio del contenido.
+      inicioContenido: descarga?.libro?.inicioContenido ?? null,
     });
   }
 

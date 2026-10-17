@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './features/auth/presentation/context/AuthContext';
 import AppLayout from './components/layout/AppLayout';
@@ -13,6 +13,7 @@ import DescargasPage from './features/descargas/presentation/pages/DescargasPage
 import HomePage from './features/libros/presentation/pages/HomePage';
 import LibroDetailPage from './features/libros/presentation/pages/LibroDetailPage';
 import ReaderPage from './features/libros/presentation/pages/ReaderPage';
+import MisLibrosPage from './features/libros/presentation/pages/MisLibrosPage';
 import UploadPage from './features/libros/presentation/pages/UploadPage';
 import NotFoundPage from './components/common/NotFoundPage';
 
@@ -39,7 +40,9 @@ export default function App() {
                 <Route index element={<HomePage />} />
                 <Route path="libro/:id" element={<LibroDetailPage />} />
                 <Route path="leer/:id/:pagina" element={<ReaderPage />} />
-                <Route path="subir" element={<UploadPage />} />
+                <Route path="mis-libros" element={<MisLibrosPage />} />
+                <Route path="mis-libros/subir" element={<UploadPage />} />
+                <Route path="subir" element={<Navigate to="/mis-libros/subir" replace />} />
                 <Route path="guardados" element={<GuardadosPage />} />
                 <Route path="descargas" element={<DescargasPage />} />
                 <Route path="carpetas" element={<CarpetasPage />} />

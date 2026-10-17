@@ -9,6 +9,8 @@ Base: `http://localhost:8000/api/v1` (ver `VITE_API_BASE_URL`). Todas las respue
 
 Las rutas marcadas con 🔒 exigen `Authorization: Bearer <token>` (el token que devuelve `POST /auth/login`) y que `tipo_usuario` sea `uploader` o `admin`. Sin token → `401`; con otro rol → `403`. La lectura del catálogo, de las páginas y de las portadas es pública.
 
+Las marcadas con 🔒 dueño además exigen ser **quien subió el libro** (`subido_por`) o `admin`; si no, `403 NOT_BOOK_OWNER`. Un libro anterior a ese campo no tiene dueño y solo lo gestiona un `admin` (ver [ADR 0009](../adr/0009-propiedad-de-libros.md)).
+
 Las rutas marcadas con 🔑 y todas las de `/me/*` exigen sesión con **cualquier rol**; `/me/*` solo toca datos del usuario del token.
 
 ## Endpoints
@@ -16,17 +18,54 @@ Las rutas marcadas con 🔑 y todas las de `/me/*` exigen sesión con **cualquie
 | Método y ruta | Auth | Descripción |
 |---|---|---|
 | `POST /books/analyze` | 🔒 | Lee un PDF y propone los datos del libro (autores, categorías, editorial, fecha, edición, saga, idioma, sinopsis). No guarda nada. |
-| `POST /books/upload` | 🔒 | Sube un PDF con sus metadatos. Responde `202` con un `jobId`. |
+| `POST /books/stage` | 🔒 | Sube un PDF **una sola vez**: propone los datos del libro, dibuja su portada y empieza a leer su texto. Responde `201` con un `stageId`. |
+| `GET /books/duplicado` | 🔒 | Dice si el libro del formulario ya existe (`titulo`, `autores`, `numero_edicion`, `idioma` y, opcional, `stage_id` para comparar también el PDF). Responde `duplicado`: `null` o `{libro_id, titulo}`. |
+| `GET /books/stage/:id` | 🔒 | Avance de la lectura del PDF preparado. Solo su dueño. |
+| `DELETE /books/stage/:id` | 🔒 | Descarta un PDF preparado. |
+| `POST /books/upload` | 🔒 | Guarda un libro con el `stage_id` de un PDF preparado (o, sin preparación, con el propio PDF). Responde `202` con un `jobId`. |
 | `GET /books/uploads/:jobId` | 🔒 | Estado de una carga. Solo quien la inició o un `admin`. |
 | `GET /books` | — | Catálogo paginado (sin texto de páginas ni imagen). |
 | `GET /books/categorias` | — | Categorías en uso, ordenadas. |
-| `GET /books/:id` | — | Metadatos de un libro, `total_paginas` y `tiene_portada` (sin texto). |
+| `GET /books/mios` | 🔒 | Los libros que gestiona quien consulta: los que subió él (un `admin` ve todos). Mismos filtros y paginación que `GET /books`. |
+| `GET /books/:id` | — | Metadatos de un libro, `total_paginas`, `tiene_portada` e `inicio_contenido` (sin texto). |
 | `GET /books/:id/portada` | — | Imagen de portada (JPEG, PNG o WebP), leída de `backend/uploads/portadas`, con caché de un día. `404 COVER_NOT_FOUND` si no tiene o el archivo ya no existe. |
 | `GET /books/:id/texto` | 🔑 | Todas las páginas del libro en una respuesta (para descargar). |
 | `GET /books/:id/paginas/:numero` | — | Texto de una página, con `anterior` y `siguiente`. |
 | `POST /books` | 🔒 | Crea un libro solo con metadatos (JSON, sin páginas). |
-| `PUT /books/:id` | 🔒 | Edita metadatos (JSON). El texto no se modifica. |
-| `DELETE /books/:id` | 🔒 | Elimina el libro con todas sus páginas. |
+| `PUT /books/:id` | 🔒 dueño | Edita metadatos (JSON). El texto no se modifica. Solo quien subió el libro o un `admin`; `409 DUPLICATE_BOOK` si otro libro ya tiene ese título, edición e idioma. Responde el libro con `total_paginas` y `tiene_portada`. |
+| `DELETE /books/:id` | 🔒 dueño | Elimina el libro con todas sus páginas, su portada y sus apariciones en guardados, progreso y carpetas. Solo quien subió el libro o un `admin`. |
+
+### `POST /books/stage`
+
+`multipart/form-data` con el campo `pdf` (mismas reglas de tamaño y formato que la subida). Es la forma de subir un libro en el frontend: el PDF viaja **una sola vez**. El servidor lo analiza (como `POST /books/analyze`), dibuja la portada (primera página, JPEG de hasta 640×900 px y 450 KB) y empieza a leer el texto en segundo plano, de modo que cuando se envía el formulario solo falta guardarlo ([ADR 0010](../adr/0010-subida-unica-con-preparacion.md)).
+
+Respuesta `201`:
+
+```json
+{ "success": true, "data": {
+  "stageId": "0b9e…", "estado": "leyendo", "progreso": { "paginas_procesadas": 0, "total_paginas": null },
+  "analisis": { "titulo": "…", "autores": ["…"], "fuentes": { "autores": "metadatos" } },
+  "portada": { "mime": "image/jpeg", "base64": "/9j/4AAQ…" }
+} }
+```
+
+`portada` es `null` si no se pudo dibujar. `analisis` tiene la forma de `POST /books/analyze`. Errores: los del archivo (`FILE_REQUIRED`, `INVALID_FILE`, `FILE_TOO_LARGE`) y `CORRUPT_PDF` / `PDF_ENCRYPTED` (422).
+
+Cada usuario tiene una sola preparación: preparar otro PDF descarta la anterior. Caduca a los `STAGE_TTL_MINUTES` (20); enviar el formulario la alarga. El PDF solo se conserva en memoria hasta terminar de leer su texto.
+
+La respuesta de `POST /books/stage` trae además `duplicado` (`null` o `{libro_id, titulo}`) si ese mismo PDF ya está en la biblioteca.
+
+### `GET /books/stage/:id`
+
+```json
+{ "success": true, "data": { "stageId": "0b9e…", "estado": "listo", "progreso": { "paginas_procesadas": 520, "total_paginas": 520 }, "paginasSinTexto": 25 } }
+```
+
+`paginasSinTexto` (solo cuando el texto ya está leído) cuenta las páginas con menos de 25 caracteres: imágenes, hojas en blanco o con solo un número; el frontend avisa si son muchas. `estado`: `leyendo`, `listo` o `error` (con `error: { code, message }`, por ejemplo `NO_EXTRACTABLE_TEXT` o `CORRUPT_PDF`: así el problema se ve antes de rellenar el formulario). `404 STAGE_NOT_FOUND` si no existe, caducó o es de otro usuario.
+
+### `DELETE /books/stage/:id`
+
+Descarta la preparación. Responde `200` aunque ya no exista.
 
 ### `POST /books/analyze`
 
@@ -62,12 +101,14 @@ Las rutas marcadas con 🔑 y todas las de `/me/*` exigen sesión con **cualquie
 
 | Campo | Obligatorio | Notas |
 |---|---|---|
-| `pdf` | Sí | Archivo PDF, hasta `MAX_PDF_SIZE_MB` (50 MB por defecto). |
+| `pdf` | Sí, o `stage_id` | Archivo PDF, hasta `MAX_PDF_SIZE_MB` (200 MB por defecto). No se envía junto con `stage_id` (`400 INVALID_UPLOAD`). |
+| `stage_id` | Sí, o `pdf` | Id de un PDF preparado con `POST /books/stage`: no hay que volver a enviar el PDF; el servidor guarda el texto que ya leyó (`404 STAGE_NOT_FOUND` si caducó). Si el guardado falla (por ejemplo, título repetido) la preparación se conserva para reenviar corregido. |
+| `usar_portada_pdf` | No | `1` con `stage_id`: usa la portada que dibujó el servidor. Una `portada` propia gana sobre ella. |
 | `titulo` | Sí | |
 | `sinopsis`, `idioma` (`es`), `empresa_edicion` | No | |
 | `numero_edicion` | No | Entero ≥ 1 (1). |
 | `fecha_publicacion` | No | Fecha ISO (`2020-05-01`). |
-| `portada` | No | **Archivo** de imagen (JPEG, PNG o WebP, hasta 512 KB; el formato se valida por su contenido). El frontend envía un JPEG preparado en el navegador (ver [ADR 0002](../adr/0002-portada-renderizada-en-el-cliente.md)). |
+| `portada` | No | **Archivo** de imagen (JPEG, PNG o WebP, hasta 512 KB; el formato se valida por su contenido). El frontend solo la envía si la persona elige una imagen propia (reducida a JPEG en el navegador); la de la primera página del PDF la dibuja el servidor ([ADR 0010](../adr/0010-subida-unica-con-preparacion.md)). |
 | `categorias`, `autores` | No | Lista: campo repetido, JSON (`["a","b"]`) o separada por comas. |
 | `saga`, `numero_en_saga` | No | Nombre de la saga y posición. |
 
@@ -129,13 +170,21 @@ Query opcional: `categoria` (exacta, sin distinguir mayúsculas ni acentos), `sa
 
 `total` es el número de libros que coinciden (no el de esta página).
 
+### `GET /books/mios` 🔒
+
+Igual que `GET /books` (mismos parámetros y forma de respuesta), pero solo con los libros subidos por el usuario del token; para un `admin` devuelve todo el catálogo. El campo `subido_por` no viaja nunca en las respuestas de libros.
+
 ### `GET /books/:id/paginas/:numero`
 
 ```json
-{ "success": true, "data": { "libro_id": "665f…", "titulo": "…", "pagina": 2, "texto": "…", "total_paginas": 30, "anterior": 1, "siguiente": 3 } }
+{ "success": true, "data": { "libro_id": "665f…", "titulo": "…", "pagina": 2, "texto": "…", "total_paginas": 30, "inicio_contenido": 8, "anterior": 1, "siguiente": 3 } }
 ```
 
-`anterior` y `siguiente` son `null` en los extremos. El texto conserva saltos de línea (`\n`) y separa los párrafos con una línea en blanco (`\n\n`). Una página sin texto devuelve `"texto": ""`.
+`anterior` y `siguiente` son `null` en los extremos. El texto conserva saltos de línea (`\n`) y separa los párrafos con una línea en blanco (`\n\n`). Una página sin texto devuelve `"texto": ""`. Al subir el libro se descartan los glifos vacíos (`■`, `U+FFFD`), las líneas cortas que son basura de OCR (por ejemplo `J^OiA`) y las tiras de puntos guía de los índices se acortan a cinco puntos ([ADR 0008](../adr/0008-limpieza-ruido-ocr-y-hoja-de-lectura.md)). Las letras mal reconocidas por el OCR del PDF original no se corrigen.
+
+**Tablas y listas en el texto.** Las tablas con bordes que se reconocen al leer el PDF salen como filas de texto en el lugar donde estaban, separadas del resto por una línea en blanco: `| Unidad | Horas |`, una línea `| --- | --- |` y luego las demás filas; un `|` dentro de una celda va como `\|`. Las listas no se marcan: se reconocen en el lector por sus viñetas (`•`, `-`, `*`...) o su numeración (`1.`, `1)`, `a)`), así que también valen para los libros ya subidos. Las tablas solo existen en los libros subidos después de este cambio ([ADR 0011](../adr/0011-contenido-tablas-y-listas.md)).
+
+**`inicio_contenido`** es el número de la página donde empieza el contenido (después de la portada, los créditos, el índice y el prólogo), detectado automáticamente al subir el libro. Es `null` (o `0` en los listados) si no se detectó nada que saltar; en los libros anteriores a este campo se calcula la primera vez que se consulta y queda guardado.
 
 ### `GET /books/:id/texto` 🔑
 
@@ -173,6 +222,8 @@ Límites: 100 carpetas por usuario, 500 libros por carpeta, nombre de hasta 80 c
 |---|---|---|
 | `UNAUTHENTICATED`, `INVALID_TOKEN` | 401 | Falta el token o es inválido/expiró. |
 | `FORBIDDEN` | 403 | El rol no puede escribir. |
+| `STAGE_NOT_FOUND` | 404 | El PDF preparado no existe, caducó o es de otro usuario. |
+| `NOT_BOOK_OWNER` | 403 | El libro lo subió otra persona (o no tiene dueño) y el usuario no es `admin`. |
 | `FILE_REQUIRED` | 400 | No se adjuntó `pdf`. |
 | `INVALID_UPLOAD` | 400 | Archivos en campos distintos de `pdf` y `portada`, o más de uno por campo. |
 | `INVALID_FILE` | 415 | No es un PDF. |
@@ -180,7 +231,7 @@ Límites: 100 carpetas por usuario, 500 libros por carpeta, nombre de hasta 80 c
 | `COVER_TOO_LARGE` | 413 | La portada supera 512 KB. |
 | `INVALID_COVER` | 415 | La portada no es una imagen JPEG, PNG o WebP. |
 | `INVALID_METADATA` | 400 | Falta el título o un valor no es válido. |
-| `DUPLICATE_BOOK` | 409 | Ya existe (o se está cargando) un libro con ese título, edición e idioma. Incluye `libro_id` si ya existe. |
+| `DUPLICATE_BOOK` | 409 | El libro ya existe (o se está cargando): mismo título, edición e idioma (sin distinguir mayúsculas ni acentos) y, si hay autores, al menos uno en común (o el registrado no tiene autores); o el mismo PDF (hash SHA-256). Incluye `libro_id` y `titulo` si ya existe. |
 | `INVALID_ID`, `INVALID_PAGE`, `INVALID_JSON`, `VALIDATION_ERROR` | 400 | Parámetros mal formados. |
 | `INVALID_FOLDER`, `FOLDER_LIMIT`, `FOLDER_FULL` | 400 | Datos de carpeta inválidos o límite alcanzado. |
 | `DUPLICATE_FOLDER` | 409 | Ya tienes una carpeta con ese nombre. |

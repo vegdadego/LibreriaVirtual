@@ -121,15 +121,66 @@ class ApiClient {
   }
 
   /**
-   * Envía un `multipart/form-data` (subida de archivos) con un plazo mayor,
-   * porque el PDF puede pesar decenas de MB.
+   * Envía un `multipart/form-data` (subida de archivos) con un plazo de 10 minutos,
+   * porque el PDF puede pesar cientos de MB.
    *
    * @param {string} endpoint
    * @param {FormData} formData
    * @returns {Promise<any>}
    */
   postForm(endpoint, formData) {
-    return this.request(endpoint, { method: 'POST', body: formData, timeout: 120000 });
+    return this.request(endpoint, { method: 'POST', body: formData, timeout: 600000 });
+  }
+
+  /**
+   * Como `postForm`, pero informa el avance de la subida (`fetch` no puede medirlo, por eso
+   * usa `XMLHttpRequest`). Mismos encabezados, plazo y errores (`ApiError`) que `request`.
+   *
+   * @param {string} endpoint
+   * @param {FormData} formData
+   * @param {Object} [options]
+   * @param {(avance: {cargado: number, total: number}) => void} [options.onProgress]
+   * @param {AbortSignal} [options.signal] Cancela la subida (el error tiene `status` 499).
+   * @returns {Promise<any>}
+   */
+  postFormWithProgress(endpoint, formData, { onProgress, signal } = {}) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', this.url(endpoint));
+      xhr.timeout = 600000;
+      xhr.setRequestHeader('Accept', 'application/json');
+      const token = this.getToken();
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) onProgress?.({ cargado: event.loaded, total: event.total });
+      };
+      xhr.onload = () => {
+        let data = null;
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch {
+          data = null;
+        }
+        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+        else reject(new ApiError(data?.message || `Error del servidor (${xhr.status})`, xhr.status, data));
+      };
+      xhr.onerror = () =>
+        reject(
+          new ApiError('No se pudo conectar con el servidor backend. Verifica que esté iniciado y accesible.', 0)
+        );
+      xhr.ontimeout = () => reject(new ApiError('La subida excedió el tiempo límite de espera (timeout).', 408));
+      xhr.onabort = () => reject(new ApiError('Subida cancelada.', 499));
+
+      if (signal) {
+        if (signal.aborted) {
+          reject(new ApiError('Subida cancelada.', 499));
+          return;
+        }
+        signal.addEventListener('abort', () => xhr.abort(), { once: true });
+      }
+      xhr.send(formData);
+    });
   }
 
   put(endpoint, body, headers = {}) {

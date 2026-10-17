@@ -7,7 +7,7 @@ from tests.helpers.api import api, make_book
 
 ALICE = make_token("lector")
 BOB = make_token("lector")
-UPLOADER = make_token("uploader")
+ADMIN = make_token("admin")
 NO_ID = "64b000000000000000000000"
 
 
@@ -97,7 +97,7 @@ async def test_deleting_a_book_removes_it_from_folders(client):
     one = (await create_folder(client, {"nombre": "Limpieza 1", "libro_id": str(libro["_id"])}))[1]["data"]["_id"]
     two = (await create_folder(client, {"nombre": "Limpieza 2", "libro_id": str(libro["_id"])}))[1]["data"]["_id"]
 
-    assert (await api(client, f"/books/{libro['_id']}", method="DELETE", token=UPLOADER))[0] == 200
+    assert (await api(client, f"/books/{libro['_id']}", method="DELETE", token=ADMIN))[0] == 200
 
     for folder_id in (one, two):
         _, body = await api(client, f"/me/carpetas/{folder_id}", token=ALICE)

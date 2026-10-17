@@ -34,7 +34,7 @@ os.environ.pop("MONGO_URI", None)
 
 from app import db as app_db  # noqa: E402
 from app.main import app  # noqa: E402
-from app.services import pdf_text, upload_jobs  # noqa: E402
+from app.services import pdf_text, staged_uploads, upload_jobs  # noqa: E402
 
 
 def _find_mongod() -> str | None:
@@ -93,6 +93,7 @@ async def database(request, mongo_uri):
     await app_db.get_db().client.drop_database(name)
     await app_db.ensure_indexes()
     upload_jobs.reset_jobs()
+    staged_uploads.reset_stages()
     yield app_db.get_db()
     await app_db.disconnect()
 

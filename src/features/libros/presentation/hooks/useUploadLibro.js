@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { defaultLibroRepository } from '../../infrastructure/defaultLibroRepository';
 import { UploadLibroUseCase } from '../../application/UploadLibroUseCase';
 
-const POLL_MS = 1000;
+/** El guardado de un libro ya leído dura milésimas: se consulta seguido para no sumar espera. */
+const POLL_MS = 250;
 /** Tras tantos fallos de red seguidos al consultar el estado, se da por perdida la carga. */
 const MAX_POLL_FAILURES = 5;
 
