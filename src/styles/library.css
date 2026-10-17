@@ -65,6 +65,34 @@
   }
 }
 
+.sidenav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sidenav-toggle {
+  display: flex;
+  flex-shrink: 0;
+  padding: 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  background: transparent;
+  color: var(--brand-text-muted);
+  cursor: pointer;
+}
+
+.sidenav-toggle:hover {
+  background-color: var(--brand-cardHover);
+  color: var(--brand-text);
+}
+
+.sidenav-toggle:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: 1px;
+}
+
 .sidenav-brand {
   display: flex;
   align-items: center;
@@ -228,6 +256,65 @@
   cursor: pointer;
 }
 
+/* ---------- Barra lateral reducida (solo iconos) ---------- */
+@media (min-width: 768px) {
+  .sidenav,
+  .app-main {
+    transition: width 0.2s ease, margin-left 0.2s ease;
+  }
+
+  .nav-collapsed .sidenav {
+    width: 76px;
+    padding-inline: 0.7rem;
+    align-items: center;
+  }
+
+  .nav-collapsed .app-main {
+    margin-left: 76px;
+  }
+
+  .nav-collapsed .sidenav-head {
+    flex-direction: column;
+  }
+
+  .nav-collapsed .sidenav-brand {
+    padding: 0;
+  }
+
+  .nav-collapsed .sidenav-brand-text,
+  .nav-collapsed .sidenav-link span,
+  .nav-collapsed .sidenav-login span,
+  .nav-collapsed .sidenav-user-info {
+    display: none;
+  }
+
+  .nav-collapsed .sidenav-nav,
+  .nav-collapsed .sidenav-footer {
+    align-items: center;
+  }
+
+  .nav-collapsed .sidenav-link {
+    justify-content: center;
+    padding: 0.7rem;
+  }
+
+  .nav-collapsed .sidenav-login {
+    padding: 0.7rem;
+  }
+
+  .nav-collapsed .sidenav-user {
+    flex-direction: column;
+    padding: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidenav,
+  .app-main {
+    transition: none;
+  }
+}
+
 /* ---------- Biblioteca ---------- */
 .library-toolbar {
   display: flex;
@@ -255,14 +342,46 @@
   border-radius: 0.75rem;
   background-color: var(--brand-cardBg);
   color: var(--brand-text-subtle);
+}
+
+.library-search:hover,
+.library-search:focus-within {
+  border-color: var(--brand-accent);
+}
+
+.library-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--brand-text);
   font: inherit;
   font-size: 0.85rem;
-  text-align: left;
+}
+
+.library-search input::placeholder {
+  color: var(--brand-text-subtle);
+}
+
+/* Se usa el botón propio de borrar; se oculta el del navegador. */
+.library-search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.library-search-clear {
+  display: flex;
+  padding: 0.2rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--brand-text-muted);
   cursor: pointer;
 }
 
-.library-search:hover {
-  border-color: var(--brand-accent);
+.library-search-clear:hover {
+  background-color: var(--brand-cardHover);
+  color: var(--brand-text);
 }
 
 .library-grid {

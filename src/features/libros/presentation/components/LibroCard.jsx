@@ -1,75 +1,32 @@
 import React from 'react';
-import { Edit2, Trash2, BookmarkCheck } from 'lucide-react';
-import Badge from '../../../../components/common/Badge';
+import BookCover from './BookCover';
 
-export default function LibroCard({ libro, onEdit, onDelete, onPrestar }) {
-  const isAvailable = libro.estaDisponible ? libro.estaDisponible() : (libro.copiasDisponibles || 0) > 0;
-
+/**
+ * Tarjeta de un libro para las cuadrículas. Es un botón; las acciones extra
+ * (guardar, carpeta...) se pasan en `actions` y quedan fuera del botón.
+ *
+ * @param {Object} props
+ * @param {import('../../domain/models/Libro').Libro} props.libro
+ * @param {Function} props.onClick Abre el detalle del libro.
+ * @param {React.ReactNode} [props.actions] Controles que se muestran sobre la portada.
+ * @returns {JSX.Element}
+ */
+export default function LibroCard({ libro, onClick, actions }) {
   return (
-    <div className="card card-hover" style={{ display: 'flex', flexDirection: 'column' }}>
-      <div className="card-header" style={{ marginBottom: '0.75rem' }}>
-        <Badge variant={isAvailable ? 'success' : 'danger'}>
-          {isAvailable ? `${libro.copiasDisponibles} Disponibles` : 'Agotado'}
-        </Badge>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>
-          ISBN: {libro.isbn}
+    <div className="book-card series-card-hover">
+      <button type="button" className="book-card-main" onClick={onClick}>
+        <span className="book-card-cover">
+          <BookCover titulo={libro.titulo} src={libro.portadaUrl} />
         </span>
-      </div>
-
-      <div style={{ flex: 1 }}>
-        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.35rem', lineHeight: '1.3' }}>
-          {libro.titulo}
-        </h3>
-        <p style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 500, marginBottom: '0.5rem' }}>
-          {libro.autor}
-        </p>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          <span>📂 {libro.categoria}</span>
-          <span>•</span>
-          <span>📅 {libro.año}</span>
-        </div>
-      </div>
-
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: '0.75rem',
-        borderTop: '1px solid var(--border-subtle)',
-        marginTop: '0.5rem'
-      }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => onEdit(libro)}
-            title="Editar libro"
-          >
-            <Edit2 size={14} />
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => onDelete(libro.id)}
-            title="Eliminar libro"
-            style={{ color: 'var(--color-danger)' }}
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-
-        <button
-          type="button"
-          className="btn btn-primary btn-sm"
-          disabled={!isAvailable}
-          onClick={() => onPrestar(libro)}
-          style={{ opacity: isAvailable ? 1 : 0.5 }}
-        >
-          <BookmarkCheck size={14} />
-          Prestar
-        </button>
-      </div>
+        <span className="book-card-info">
+          <strong className="book-card-title">{libro.titulo}</strong>
+          {libro.autores.length > 0 && (
+            <span className="book-card-author">{libro.autoresTexto}</span>
+          )}
+          <span className="book-card-meta">{libro.totalPaginas} págs.</span>
+        </span>
+      </button>
+      {actions && <div className="book-card-actions">{actions}</div>}
     </div>
   );
 }

@@ -1,50 +1,78 @@
 /**
- * Entidad de Dominio: Libro
- * Contiene la estructura y reglas de negocio puras, sin depender de la UI ni de la API.
+ * Entidad de dominio: Libro del catálogo.
+ * No depende de la UI ni de la API.
  */
-
 export class Libro {
+  /**
+   * @param {Object} data
+   * @param {string} data.id Identificador del libro.
+   * @param {string} data.titulo
+   * @param {string[]} [data.autores] Nombres de los autores.
+   * @param {string[]} [data.categorias]
+   * @param {string} [data.sinopsis]
+   * @param {string} [data.idioma]
+   * @param {string} [data.editorial]
+   * @param {number} [data.numeroEdicion]
+   * @param {string|null} [data.fechaPublicacion] Fecha ISO.
+   * @param {{nombre: string, numero: number}|null} [data.saga]
+   * @param {number} [data.totalPaginas]
+   * @param {string|null} [data.portadaUrl] URL de la portada, o `null` si no tiene.
+   */
   constructor({
-    id = null,
+    id,
     titulo,
-    autor,
-    isbn,
-    categoria,
+    autores = [],
+    categorias = [],
+    sinopsis = '',
+    idioma = 'es',
     editorial = '',
-    año = new Date().getFullYear(),
-    copiasTotales = 1,
-    copiasDisponibles = 1,
-    estado = 'DISPONIBLE'
+    numeroEdicion = 1,
+    fechaPublicacion = null,
+    saga = null,
+    totalPaginas = 0,
+    portadaUrl = null,
   }) {
-    this.id = id ? String(id) : null;
+    this.id = String(id);
     this.titulo = titulo;
-    this.autor = autor;
-    this.isbn = isbn;
-    this.categoria = categoria;
+    this.autores = autores;
+    this.categorias = categorias;
+    this.sinopsis = sinopsis;
+    this.idioma = idioma;
     this.editorial = editorial;
-    this.año = Number(año);
-    this.copiasTotales = Number(copiasTotales);
-    this.copiasDisponibles = Number(copiasDisponibles);
-    this.estado = this.copiasDisponibles > 0 ? 'DISPONIBLE' : 'AGOTADO';
+    this.numeroEdicion = numeroEdicion;
+    this.fechaPublicacion = fechaPublicacion;
+    this.saga = saga;
+    this.totalPaginas = totalPaginas;
+    this.portadaUrl = portadaUrl;
   }
 
-  estaDisponible() {
-    return this.copiasDisponibles > 0;
+  /** Autores separados por coma, o `''` si no hay. */
+  get autoresTexto() {
+    return this.autores.join(', ');
   }
+}
 
-  validar() {
-    if (!this.titulo || this.titulo.trim() === '') {
-      throw new Error('El título del libro es obligatorio.');
-    }
-    if (!this.autor || this.autor.trim() === '') {
-      throw new Error('El autor del libro es obligatorio.');
-    }
-    if (!this.isbn || this.isbn.trim() === '') {
-      throw new Error('El ISBN del libro es obligatorio.');
-    }
-    if (this.copiasTotales < 1) {
-      throw new Error('Debe existir al menos 1 copia en stock.');
-    }
-    return true;
+/**
+ * Una página de texto de un libro, con la navegación a sus vecinas.
+ */
+export class PaginaLibro {
+  /**
+   * @param {Object} data
+   * @param {string} data.libroId
+   * @param {string} data.titulo
+   * @param {number} data.pagina Número de página (desde 1).
+   * @param {string} data.texto Texto con saltos de línea; párrafos separados por línea en blanco.
+   * @param {number} data.totalPaginas
+   * @param {number|null} data.anterior
+   * @param {number|null} data.siguiente
+   */
+  constructor({ libroId, titulo, pagina, texto, totalPaginas, anterior, siguiente }) {
+    this.libroId = String(libroId);
+    this.titulo = titulo;
+    this.pagina = pagina;
+    this.texto = texto;
+    this.totalPaginas = totalPaginas;
+    this.anterior = anterior;
+    this.siguiente = siguiente;
   }
 }

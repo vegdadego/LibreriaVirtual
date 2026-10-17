@@ -9,10 +9,23 @@ class ApiClient {
   }
 
   /**
-   * Obtiene el token de autenticación almacenado
+   * Obtiene el token de autenticación almacenado.
+   *
+   * `AuthApiRepository` lo guarda con `storage.set`, que lo serializa a JSON
+   * (queda entre comillas); aquí se deserializa para no enviar las comillas.
    */
   getToken() {
-    return localStorage.getItem('bibliotech_token') || null;
+    try {
+      const raw = localStorage.getItem('bibliotech_token');
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return raw;
+      }
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -34,18 +47,32 @@ class ApiClient {
   }
 
   /**
+   * URL absoluta de una ruta de la API (para `<img src>` y descargas).
+   *
+   * @param {string} endpoint Ruta que empieza con `/`.
+   * @returns {string}
+   */
+  url(endpoint) {
+    return `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  }
+
+  /**
    * Realiza la petición HTTP con timeout
    */
   async request(endpoint, options = {}) {
-    const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    const url = this.url(endpoint);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), options.timeout ?? TIMEOUT_MS);
+
+    const headers = this.getHeaders(options.headers);
+    // Con FormData el navegador añade el Content-Type con su `boundary`.
+    if (options.body instanceof FormData) delete headers['Content-Type'];
 
     try {
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
-        headers: this.getHeaders(options.headers),
+        headers,
       });
 
       clearTimeout(timeoutId);
@@ -76,8 +103,13 @@ class ApiClient {
   }
 
   // Métodos HTTP listos para consumir los endpoints del backend
-  get(endpoint, headers = {}) {
-    return this.request(endpoint, { method: 'GET', headers });
+  /**
+   * @param {string} endpoint
+   * @param {Record<string, string>} [headers]
+   * @param {{timeout?: number}} [options] `timeout` en ms, para respuestas grandes.
+   */
+  get(endpoint, headers = {}, options = {}) {
+    return this.request(endpoint, { method: 'GET', headers, ...options });
   }
 
   post(endpoint, body, headers = {}) {
@@ -86,6 +118,18 @@ class ApiClient {
       body: JSON.stringify(body),
       headers,
     });
+  }
+
+  /**
+   * Envía un `multipart/form-data` (subida de archivos) con un plazo mayor,
+   * porque el PDF puede pesar decenas de MB.
+   *
+   * @param {string} endpoint
+   * @param {FormData} formData
+   * @returns {Promise<any>}
+   */
+  postForm(endpoint, formData) {
+    return this.request(endpoint, { method: 'POST', body: formData, timeout: 120000 });
   }
 
   put(endpoint, body, headers = {}) {

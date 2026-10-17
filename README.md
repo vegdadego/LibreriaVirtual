@@ -1,100 +1,54 @@
-# 📚 BiblioTech - Frontend con Clean Architecture Modular
+# Biblioteca Virtual
 
-Frontend moderno, responsivo (Web y Móvil) para gestión bibliotecaria desarrollado con **React**, **Vite** y **Vanilla CSS**, estructurado bajo una rigurosa **Clean Architecture Modular (Feature-Driven Clean Architecture)**, preparado para desacoplamiento total y conexión inmediata con cualquier backend.
+Una biblioteca en línea, con la idea de un "Netflix de libros": creas una cuenta, lees libros y, si tu cuenta lo permite, subes los tuyos en PDF. Se guarda solo el **texto** de cada página (el PDF original no se conserva) y la única imagen es la **portada**.
 
----
+## Qué se puede hacer
 
-## 🏛️ Arquitectura Limpia Modular
+- **Leer** en una pantalla de texto con tamaño de letra ajustable; la biblioteca recuerda por qué página vas ("Continuar leyendo").
+- **Subir libros** (`uploader` y `admin`): PDF con texto seleccionable. Al elegirlo, el formulario se rellena solo (autores, categorías, editorial, fecha, edición, saga, idioma y sinopsis) y se puede corregir. La portada es una imagen propia o la primera página del PDF y se guarda como archivo en `backend/uploads/portadas`.
+- **Guardar para ver más tarde** y organizar en **carpetas**, como listas de reproducción.
+- **Descargar** un libro en PDF para leerlo **sin conexión** y ver la sección "Descargados" (en la versión compilada la app abre incluso sin red).
 
-El proyecto implementa la **Regla de Dependencia de Clean Architecture** en cada funcionalidad (`libros`, `prestamos`, `usuarios`, `auth`, `dashboard`):
-
-> **Domain &larr; Application &larr; Infrastructure / Presentation**
+## Estructura
 
 ```text
-src/
-├── features/
-│   ├── libros/
-│   │   ├── domain/               # 🟢 Entidades y reglas de negocio puras
-│   │   │   ├── models/Libro.js
-│   │   │   └── repositories/LibroRepository.js (Contrato de interfaz)
-│   │   ├── application/          # 🟡 Casos de uso de la aplicación
-│   │   │   ├── GetLibrosUseCase.js
-│   │   │   ├── CreateLibroUseCase.js
-│   │   │   ├── UpdateLibroUseCase.js
-│   │   │   └── DeleteLibroUseCase.js
-│   │   ├── infrastructure/       # 🔵 Adaptadores técnicos y llamadas a la API
-│   │   │   └── LibroApiRepository.js
-│   │   └── presentation/         # 🟣 UI en React
-│   │       ├── components/ (LibroCard.jsx, LibroModal.jsx)
-│   │       ├── hooks/useLibros.js (Presenter)
-│   │       └── pages/LibrosPage.jsx
-│   │
-│   ├── prestamos/
-│   │   ├── domain/ (Prestamo.js, PrestamoRepository.js)
-│   │   ├── application/ (GetPrestamosUseCase.js, RegistrarPrestamoUseCase.js, DevolverLibroUseCase.js)
-│   │   ├── infrastructure/ (PrestamoApiRepository.js)
-│   │   └── presentation/ (PrestamoCard.jsx, PrestamoModal.jsx, usePrestamos.js, PrestamosPage.jsx)
-│   │
-│   ├── usuarios/
-│   │   ├── domain/ (Usuario.js, UsuarioRepository.js)
-│   │   ├── application/ (GetUsuariosUseCase.js, CreateUsuarioUseCase.js, etc.)
-│   │   ├── infrastructure/ (UsuarioApiRepository.js)
-│   │   └── presentation/ (UsuarioCard.jsx, UsuarioModal.jsx, useUsuarios.js, UsuariosPage.jsx)
-│   │
-│   ├── auth/
-│   │   ├── domain/ (User.js, AuthRepository.js)
-│   │   ├── application/ (LoginUseCase.js, LogoutUseCase.js, GetCurrentUserUseCase.js)
-│   │   ├── infrastructure/ (AuthApiRepository.js)
-│   │   └── presentation/ (AuthContext.jsx)
-│   │
-│   └── dashboard/
-│       ├── domain/ (DashboardMetrics.js, DashboardRepository.js)
-│       ├── application/ (GetDashboardMetricsUseCase.js, GetActividadRecienteUseCase.js)
-│       ├── infrastructure/ (DashboardApiRepository.js)
-│       └── presentation/ (DashboardPage.jsx)
-│
-├── services/api/                 # Cliente HTTP y catálogo de endpoints
-│   ├── apiClient.js              # Fetch wrapper con JWT, timeout y error handling
-│   ├── endpoints.js              # Rutas del backend centralizadas
-│   └── errorHandler.js           # Manejo normalizado de errores
-│
-├── components/                   # Componentes visuales transversales
-│   ├── common/                   # Button, Input, Modal, Badge, EmptyState, Banner
-│   └── layout/                   # Sidebar (desktop), Header, MobileNavbar (móvil)
-│
-└── styles/                       # Sistema de diseño (Vanilla CSS)
-    ├── variables.css             # Tokens de diseño (paleta, fuentes, radios, sombras)
-    ├── layout.css                # Layout responsivo web/móvil
-    └── components.css            # Estilos de botones, formularios, tarjetas y modales
+LibreriaVirtual/
+├── src/                      # Frontend (React + Vite + CSS propio), Clean Architecture por funcionalidad
+│   ├── features/
+│   │   ├── libros/           # catálogo, detalle, lector de texto, subida
+│   │   ├── biblioteca/       # guardados y progreso de lectura
+│   │   ├── descargas/        # PDF en el navegador y almacén local (IndexedDB)
+│   │   ├── carpetas/         # carpetas de libros
+│   │   └── auth/             # sesión
+│   ├── components/           # layout y piezas comunes
+│   └── services/             # cliente HTTP, endpoints, portadas
+├── backend/                  # API REST en Python (FastAPI + MongoDB + PyMuPDF)
+├── public/                   # service worker y manifest (modo sin conexión)
+└── docs/                     # referencia (API, base de datos, UI) y decisiones (ADR)
 ```
 
----
+En cada funcionalidad: `domain` (entidades y contratos) ← `application` (casos de uso) ← `infrastructure` (API, IndexedDB) y `presentation` (React).
 
-## 💡 Beneficios de esta Arquitectura
+## Puesta en marcha
 
-1. **Cero Acoplamiento al Backend**: La capa de dominio (`domain/`) y los casos de uso (`application/`) no saben cómo se obtienen los datos. Si mañana cambias de REST API a GraphQL o Firebase, solo tocas la carpeta `infrastructure/` sin modificar la UI ni la lógica de negocio.
-2. **Independiente de la UI**: Si cambias de React a React Native, Vue o Angular, las carpetas `domain/` y `application/` se reutilizan al 100%.
-3. **Facilidad de Pruebas Unitarias (TDD)**: Puedes testear entidades y casos de uso sin mocks complejos ni servidores levantados.
-
----
-
-## 🔌 Conexión con el Backend
-
-1. Ajusta [` .env `](file:///c:/Code/frondend%20biblioteca/.env) con la URL de tu servidor:
-   ```env
-   VITE_API_BASE_URL=http://localhost:8000/api/v1
-   ```
-2. Revisa o adapta las rutas en [`src/services/api/endpoints.js`](file:///c:/Code/frondend%20biblioteca/src/services/api/endpoints.js).
-3. Cada repositorio en `infrastructure/` (`LibroApiRepository.js`, `PrestamoApiRepository.js`, `UsuarioApiRepository.js`) consume automáticamente esa API con Bearer tokens JWT inyectados.
-
----
-
-## 🚀 Comandos
+1. Backend (Python 3.11+): copia `backend/.env.example` a `backend/.env` y completa los valores (ver [docs/reference/environment.md](docs/reference/environment.md)).
+2. Frontend: `.env` con `VITE_API_BASE_URL` (por defecto `http://localhost:8000/api/v1`).
 
 ```bash
-# Servidor de desarrollo
-npm run dev
+npm install
+(cd backend && python -m venv .venv && .venv\Scripts\python -m pip install -r requirements-dev.txt)   # Windows
 
-# Compilación de producción
-npm run build
+npm run server:dev     # API en http://localhost:8000 (docs interactivas en /docs)
+npm run dev            # frontend en http://localhost:5173
+
+npm run build          # versión de producción (activa el modo sin conexión)
+npm run preview        # sirve la versión compilada
+
+npm run server:test    # pruebas del backend (pytest con un MongoDB temporal)
+cd backend && .venv\Scripts\python -m scripts.migrate_covers   # una vez: pasa a disco las portadas guardadas antes en la base de datos
 ```
+
+## Documentación
+
+- [API](docs/reference/api.md) · [Base de datos](docs/reference/database.md) · [UI](docs/reference/ui.md)
+- Decisiones: [docs/adr/](docs/adr/)

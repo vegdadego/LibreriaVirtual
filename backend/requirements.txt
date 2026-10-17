@@ -1,0 +1,10 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pymongo>=4.13
+PyJWT>=2.9
+bcrypt>=4.2
+python-multipart>=0.0.20
+pymupdf>=1.25
+orjson>=3.10
+regex>=2024.11
+python-dotenv>=1.0

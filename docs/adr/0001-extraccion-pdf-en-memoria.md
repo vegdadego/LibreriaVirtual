@@ -1,6 +1,6 @@
 # 0001. Extracción de PDF en memoria con cargas asíncronas
 
-- Estado: aceptado
+- Estado: aceptado; **los puntos 1 y 2 (multer y pdf.js) los reemplaza el [ADR 0007](0007-backend-python.md)** al pasar el backend a Python. El resto (cargas asíncronas, inserción atómica, duplicados, permisos) sigue vigente.
 - Fecha: 2026-10-14
 
 ## Contexto y problema

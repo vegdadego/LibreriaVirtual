@@ -1,0 +1,19 @@
+{
+  "name": "Biblioteca Virtual",
+  "short_name": "Biblioteca",
+  "description": "Lee y sube libros, guárdalos para después y descárgalos para leer sin conexión.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1c1815",
+  "theme_color": "#1c1815",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

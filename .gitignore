@@ -24,3 +24,7 @@ server/.env
 *.njsproj
 *.sln
 *.sw?
+
+# Portadas subidas (se generan al subir libros)
+server/uploads
+backend/uploads
