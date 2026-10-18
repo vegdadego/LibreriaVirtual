@@ -2070,3 +2070,218 @@ a.floating-nav-btn {
   font-size: 0.72em;
   color: var(--paper-ink-soft);
 }
+
+/* ---------- Modal de Configuración de Lectura ---------- */
+.reader-config-modal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  margin: auto;
+  padding: 1.5rem 1.6rem 1.75rem;
+  background-color: #231c18;
+  border: 1px solid #3c3026;
+  border-radius: 1.25rem;
+  color: #eedcc9;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(196, 154, 108, 0.08);
+  overflow-y: auto;
+}
+
+.reader-config-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 1.25rem;
+}
+
+.reader-config-title {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #f7ebe1;
+  letter-spacing: -0.01em;
+}
+
+.reader-config-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: #9d8d80;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.reader-config-close:hover {
+  color: #f7ebe1;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.reader-config-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+
+.reader-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.reader-config-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #b5a494;
+}
+
+.reader-config-label {
+  font-size: 0.9rem;
+  color: #b5a494;
+}
+
+.reader-config-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f7ebe1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sliders personalizados */
+.reader-config-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #3c3026;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.reader-config-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #c89547;
+  border: 2px solid #231c18;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.1s, background-color 0.15s;
+}
+
+.reader-config-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+  background: #d8a557;
+}
+
+.reader-config-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #c89547;
+  border: 2px solid #231c18;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+/* Segmented controls con botones redondeados tipo píldora */
+.reader-config-segmented {
+  display: flex;
+  background: #191411;
+  border: 1px solid #362b22;
+  border-radius: 9999px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.reader-config-seg-btn {
+  flex: 1;
+  padding: 0.55rem 0.8rem;
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  color: #9d8d80;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.reader-config-seg-btn:hover:not(.active) {
+  color: #d8c8b8;
+}
+
+.reader-config-seg-btn.active {
+  background-color: #c89547;
+  color: #1b130a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* Overlay para oscurecer la lectura según brillo */
+.reader-brightness-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: #000;
+  pointer-events: none;
+  z-index: 9998;
+  transition: opacity 0.15s ease;
+}
+
+/* Barra de progreso de lectura */
+.reader-progress-track {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 999;
+  cursor: pointer;
+  transition: opacity 0.3s ease, height 0.2s ease;
+}
+
+.reader-progress-track:hover {
+  height: 6px;
+}
+
+.reader-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand-accent), var(--brand-goldHover));
+  transition: width 0.2s ease;
+}
+
+/* Modos de separación entre párrafos / viñetas */
+.reader-sheet.spacing-sin_espacio .reader-paragraph,
+.reader-sheet.spacing-sin_espacio .reader-list,
+.reader-sheet.spacing-sin_espacio .reader-block {
+  margin-bottom: 0.25em;
+}
+
+.reader-sheet.spacing-fina .reader-paragraph,
+.reader-sheet.spacing-fina .reader-list,
+.reader-sheet.spacing-fina .reader-block {
+  margin-bottom: 0.8em;
+}
+
+.reader-sheet.spacing-amplia .reader-paragraph,
+.reader-sheet.spacing-amplia .reader-list,
+.reader-sheet.spacing-amplia .reader-block {
+  margin-bottom: 1.6em;
+}
+
+

@@ -1,15 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, FileX, Minus, Plus, SkipForward, Type } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, FileX, Minus, Plus, Settings, SkipForward, Type } from 'lucide-react';
 import PageState from '../../../../components/common/PageState';
 import { useLibroPagina } from '../hooks/useLibroPagina';
 import { useMiBiblioteca } from '../../../biblioteca/presentation/context/MiBibliotecaContext';
 import { storage } from '../../../../utils/storage';
 import { parsePageBlocks } from '../../../../utils/pageContent';
+import ConfiguracionLecturaModal from '../components/ConfiguracionLecturaModal';
 
 const PREFS_KEY = 'libreria_reader_prefs';
 const MIN_SIZE = 14;
 const MAX_SIZE = 30;
+
+const DEFAULT_READER_CONFIG = {
+  anchoPagina: 720,
+  brillo: 85,
+  barraProgreso: 'mostrar',
+  mostrarBarraCon: 'un_toque',
+  modo: 'cascada',
+  separacionVinetas: 'sin_espacio',
+};
+
 
 /**
  * Dibuja un bloque de una página: tabla, lista, índice con puntos guía, líneas sueltas o prosa.
@@ -112,6 +123,8 @@ function PageBlock({ block, withMargin }) {
   );
 }
 
+const READER_CONFIG_KEY = 'libreria_reader_config';
+
 /**
  * Lector de texto: muestra una página del libro con controles de tamaño y tipo de letra.
  * Se navega con los botones, el campo de página o las flechas del teclado.
@@ -126,6 +139,12 @@ export default function ReaderPage() {
 
   const { pagina, loading, error, notFound } = useLibroPagina(id, validNumber ? numero : 1);
   const [prefs, setPrefs] = useState(() => ({ size: 19, serif: true, ...storage.get(PREFS_KEY, {}) }));
+  const [readerConfig, setReaderConfig] = useState(() => ({
+    ...DEFAULT_READER_CONFIG,
+    ...storage.get(READER_CONFIG_KEY, {}),
+  }));
+  const [configOpen, setConfigOpen] = useState(false);
+  const [progressVisible, setProgressVisible] = useState(readerConfig.barraProgreso === 'mostrar');
   const [jump, setJump] = useState('');
   const { registrarProgreso } = useMiBiblioteca();
 
@@ -156,6 +175,30 @@ export default function ReaderPage() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
+
+  const handleUpdateConfig = (patch) => {
+    setReaderConfig((prev) => {
+      const next = { ...prev, ...patch };
+      storage.set(READER_CONFIG_KEY, next);
+      if (patch.barraProgreso) {
+        setProgressVisible(patch.barraProgreso === 'mostrar');
+      }
+      return next;
+    });
+  };
+
+
+  const handleSheetClick = () => {
+    if (readerConfig.barraProgreso === 'ocultar' && readerConfig.mostrarBarraCon === 'un_toque') {
+      setProgressVisible((v) => !v);
+    }
+  };
+
+  const handleSheetDoubleClick = () => {
+    if (readerConfig.barraProgreso === 'ocultar' && readerConfig.mostrarBarraCon === 'doble_toque') {
+      setProgressVisible((v) => !v);
+    }
+  };
 
   if (!validNumber) {
     return (
@@ -196,8 +239,34 @@ export default function ReaderPage() {
   const setSize = (delta) =>
     setPrefs((p) => ({ ...p, size: Math.min(MAX_SIZE, Math.max(MIN_SIZE, p.size + delta)) }));
 
+  const progressPercent = pagina?.totalPaginas ? Math.round((numero / pagina.totalPaginas) * 100) : 0;
+  const darknessOpacity = Math.max(0, Math.min(0.7, (100 - (readerConfig.brillo ?? 100)) / 100));
+
   return (
-    <div className="reader">
+    <div className={`reader reader-mode-${readerConfig.modo}`}>
+      {/* Capa de atenuación según el nivel de brillo */}
+      {darknessOpacity > 0 && (
+        <div
+          className="reader-brightness-overlay"
+          style={{ opacity: darknessOpacity }}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Barra de progreso fija inferior si está visible */}
+      {progressVisible && (
+        <div
+          className="reader-progress-track"
+          role="progressbar"
+          aria-valuenow={progressPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          title={`Progreso: ${progressPercent}% (Página ${numero} de ${pagina?.totalPaginas ?? 0})`}
+        >
+          <div className="reader-progress-fill" style={{ width: `${progressPercent}%` }} />
+        </div>
+      )}
+
       <div className="reader-bar">
         <button type="button" className="reader-back" onClick={() => navigate(`/libro/${id}`)}>
           <ArrowLeft size={16} />
@@ -235,6 +304,14 @@ export default function ReaderPage() {
           >
             <Type size={15} />
           </button>
+          <button
+            type="button"
+            onClick={() => setConfigOpen(true)}
+            aria-label="Configuración de lectura"
+            title="Configuración de lectura"
+          >
+            <Settings size={15} />
+          </button>
         </div>
       </div>
 
@@ -246,9 +323,15 @@ export default function ReaderPage() {
       )}
 
       <article
-        className="reader-sheet"
-        style={{ fontSize: `${prefs.size}px`, fontFamily: prefs.serif ? 'var(--font-serif)' : 'var(--font-sans)' }}
+        className={`reader-sheet spacing-${readerConfig.separacionVinetas}`}
+        style={{
+          fontSize: `${prefs.size}px`,
+          fontFamily: prefs.serif ? 'var(--font-serif)' : 'var(--font-sans)',
+          maxWidth: `${readerConfig.anchoPagina}px`,
+        }}
         aria-busy={loading}
+        onClick={handleSheetClick}
+        onDoubleClick={handleSheetDoubleClick}
       >
         {loading && !pagina ? (
           <PageState kind="loading" title="Cargando página..." />
@@ -263,7 +346,11 @@ export default function ReaderPage() {
         {pagina && <footer className="reader-folio">— {pagina.pagina} —</footer>}
       </article>
 
-      <nav className="reader-nav" aria-label="Navegación de páginas">
+      <nav
+        className="reader-nav"
+        style={{ maxWidth: `${readerConfig.anchoPagina}px` }}
+        aria-label="Navegación de páginas"
+      >
         <button type="button" disabled={!pagina?.anterior} onClick={() => goTo(pagina.anterior)}>
           <ChevronLeft size={16} />
           <span>Anterior</span>
@@ -296,6 +383,14 @@ export default function ReaderPage() {
           <ChevronRight size={16} />
         </button>
       </nav>
+
+      <ConfiguracionLecturaModal
+        isOpen={configOpen}
+        onClose={() => setConfigOpen(false)}
+        config={readerConfig}
+        onChange={handleUpdateConfig}
+      />
     </div>
   );
 }
+
