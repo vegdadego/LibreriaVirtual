@@ -1,6 +1,6 @@
 """Puebla la base de datos con datos de ejemplo.
 
-⚠ BORRA los usuarios, sagas, autores y libros que existan. Por eso exige `--yes`.
+⚠ BORRA los usuarios, sagas, autores, libros y páginas que existan. Por eso exige `--yes`.
 
 Uso (desde backend/):  python -m scripts.seed --yes
 """
@@ -16,6 +16,7 @@ from bson import ObjectId
 
 from app import db
 from app.config import load_env
+from app.services.book_pages import insert_pages
 
 
 async def seed() -> None:
@@ -24,7 +25,7 @@ async def seed() -> None:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     try:
         print("🧹 Limpiando colecciones anteriores...")
-        for name in ("users", "sagas", "authors", "books"):
+        for name in ("users", "sagas", "authors", "books", "book_pages"):
             await database[name].delete_many({})
         await db.ensure_indexes()
 
@@ -74,13 +75,17 @@ async def seed() -> None:
                 "categorias": ["Fantasía", "Aventura"],
                 "autores": [{"id_autor": author_id, "nombre": "Brandon Sanderson"}],
                 "saga": {"id_saga": saga_id, "nombre_saga": "Nacidos de la Bruma", "numero_en_saga": 1},
-                "contenido_escaneado": [
-                    {"pagina": 1, "texto": "Prólogo. A veces me preocupa no ser el héroe que todos piensan que soy..."},
-                    {"pagina": 2, "texto": "Capítulo 1. La ceniza caía del cielo como una nieve negra y seca..."},
-                    {"pagina": 3, "texto": "Kelsier sonrió. Era una sonrisa que no auguraba nada bueno para el Imperio..."},
-                ],
+                "total_paginas": 3,
                 **stamps,
             }
+        )
+        await insert_pages(
+            book_id,
+            [
+                {"pagina": 1, "texto": "Prólogo. A veces me preocupa no ser el héroe que todos piensan que soy..."},
+                {"pagina": 2, "texto": "Capítulo 1. La ceniza caía del cielo como una nieve negra y seca..."},
+                {"pagina": 3, "texto": "Kelsier sonrió. Era una sonrisa que no auguraba nada bueno para el Imperio..."},
+            ],
         )
         print("✅ Base de datos poblada: 1 usuario (GustavoM), 1 saga, 1 autor y 1 libro de 3 páginas.")
     finally:

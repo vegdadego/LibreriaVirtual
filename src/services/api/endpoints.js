@@ -25,6 +25,10 @@ export const ENDPOINTS = {
     DUPLICATE: '/books/duplicado',
     STAGE: '/books/stage',
     STAGE_ONE: (stageId) => `/books/stage/${stageId}`,
+    STAGE_UPLOADS: '/books/stage/uploads',
+    STAGE_UPLOAD: (uploadId) => `/books/stage/uploads/${uploadId}`,
+    STAGE_UPLOAD_CHUNK: (uploadId, index) => `/books/stage/uploads/${uploadId}/${index}`,
+    STAGE_UPLOAD_COMPLETE: (uploadId) => `/books/stage/uploads/${uploadId}/complete`,
     UPLOAD_STATUS: (jobId) => `/books/uploads/${jobId}`,
   },
 

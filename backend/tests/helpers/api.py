@@ -9,6 +9,7 @@ import httpx
 from bson import ObjectId
 
 from app.db import get_db
+from app.services.book_pages import insert_pages
 from tests.conftest import auth
 
 
@@ -50,8 +51,12 @@ async def wait_for_job(client: httpx.AsyncClient, job_id: str, token: str) -> di
 
 
 async def make_book(titulo: str, pages: int = 5, **extra) -> dict:
-    """Inserta un libro con `pages` páginas de texto directamente en la base de datos."""
+    """Inserta un libro con `pages` páginas de texto directamente en la base de datos.
+
+    Las páginas van en `book_pages`, como los libros nuevos. Si `extra` trae `contenido_escaneado`
+    se crea un libro **anterior**, con el texto dentro del propio documento."""
     now = datetime.now(timezone.utc).replace(tzinfo=None)
+    legacy = "contenido_escaneado" in extra
     document = {
         "_id": ObjectId(),
         "titulo": titulo,
@@ -61,10 +66,13 @@ async def make_book(titulo: str, pages: int = 5, **extra) -> dict:
         "categorias": [],
         "autores": [],
         "saga": None,
-        "contenido_escaneado": [{"pagina": i + 1, "texto": f"texto {i + 1}"} for i in range(pages)],
         "createdAt": now,
         "updatedAt": now,
         **extra,
     }
+    if not legacy:
+        document["total_paginas"] = pages
     await get_db().books.insert_one(document)
+    if not legacy:
+        await insert_pages(document["_id"], [{"pagina": i + 1, "texto": f"texto {i + 1}"} for i in range(pages)])
     return document

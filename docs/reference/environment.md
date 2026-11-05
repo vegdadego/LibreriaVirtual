@@ -20,6 +20,7 @@ python -m venv .venv
 | `MONGO_URI` | Sí | Cadena de conexión de MongoDB. El servidor termina si falta. Formato Atlas: `mongodb+srv://<usuario>:<contraseña>@<cluster>.mongodb.net/virtual_library_db?retryWrites=true&w=majority` |
 | `JWT_SECRET` | Sí | Clave para firmar y verificar los tokens JWT. El servidor termina si falta. |
 | `PORT` | No | Puerto de la API: se pasa a uvicorn con `--port` (los scripts de `npm` usan `8000`). |
+| `MONGO_MAX_POOL_SIZE` | No | Conexiones máximas que el servidor abre con MongoDB (20 por defecto). El cliente es único para todo el proceso y todas las peticiones comparten ese grupo, así que muchas cargas a la vez nunca abren más. |
 | `DNS_SERVERS` | No | Servidores DNS separados por comas (ej. `1.1.1.1,8.8.8.8`). Úsala si la conexión a Atlas falla con `querySrv ECONNREFUSED`. |
 
 Almacenamiento de portadas (opcional):
@@ -36,7 +37,9 @@ Carga de PDF (todas opcionales):
 | `MAX_PDF_PAGES` | `2000` | Páginas máximas por PDF (`TOO_MANY_PAGES`). |
 | `UPLOAD_CONCURRENCY` | `2` | PDF que se procesan a la vez; el resto espera en cola. |
 | `JOB_TTL_MINUTES` | `60` | Minutos que se conserva el estado de una carga terminada. |
-| `STAGE_TTL_MINUTES` | `20` | Minutos que espera un PDF ya leído (preparado con `POST /books/stage`) a que se envíe el formulario. Mientras espera solo ocupa su texto (hasta 15 MB) y la portada; el PDF se suelta al terminar de leerlo. |
+| `STAGE_TTL_MINUTES` | `20` | Minutos que espera un PDF ya leído (preparado con `POST /books/stage`) a que se envíe el formulario. Mientras espera solo ocupa su texto (hasta `MAX_CONTENT_MB`) y la portada; el PDF se suelta al terminar de leerlo. También es lo que tarda en caducar una subida por fragmentos abandonada. |
+| `MAX_CONTENT_MB` | `64` | Tope del texto extraído de un libro (`CONTENT_TOO_LARGE`). Las páginas se guardan en documentos aparte, así que ya no hay el límite de 16 MB por documento de MongoDB; esto solo protege el tamaño de la base de datos. |
+| `UPLOAD_CHUNK_KB` | `4096` | Tamaño de cada fragmento con que el navegador sube un PDF grande (`/books/stage/uploads`). El cliente usa el que le indica el servidor. |
 | `PDF_WORKERS` | `min(6, CPU - 1)` | Procesos que leen PDF en paralelo. Más procesos leen más rápido un PDF grande pero usan más memoria (unos 60 MB cada uno). |
 | `PDF_PARALLEL_MIN_PAGES` | `120` | Desde cuántas páginas un PDF se reparte entre varios procesos; uno más pequeño se lee entero en uno solo. |
 | `PDF_POOL_WARMUP` | `1` | Con `0` no se arrancan los procesos de lectura al iniciar el servidor (se crean en la primera carga). |

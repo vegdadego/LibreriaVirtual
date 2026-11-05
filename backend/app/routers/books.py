@@ -31,6 +31,7 @@ from ..services.book_ingest import (
     save_book_with_pages,
     title_key_for,
 )
+from ..services.book_pages import delete_pages, read_page_text, read_pages
 from ..services.book_queries import (
     DERIVED_FIELDS,
     HEAVY_FIELDS,
@@ -38,6 +39,7 @@ from ..services.book_queries import (
     ensure_content_start,
     find_catalog_books_by_ids,
 )
+from ..services.chunked_uploads import add_chunk, discard_upload, finish_upload, get_upload, start_upload
 from ..services.cover_image import detect_image_mime
 from ..services.cover_storage import cover_file_path, delete_cover
 from ..services.pdf_text import extract_pdf_pages, looks_like_pdf, raise_if_error, run_in_pool
@@ -169,16 +171,10 @@ async def analyze_book(request: Request, _user: CurrentUser = Depends(can_write)
     return ApiResponse({"success": True, "data": result["data"]})
 
 
-@router.post("/stage")
-async def stage_book(request: Request, user: CurrentUser = Depends(can_write)):
-    """Prepara un PDF: lo recibe una sola vez, propone los datos del libro, dibuja su portada y
-    empieza a leer su texto en segundo plano. Responde 201 con el `stageId`, el análisis y la
-    portada (JPEG en base64); `GET /books/stage/:id` informa el avance de la lectura y
-    `POST /books/upload` con ese `stage_id` guarda el libro sin volver a enviar el PDF."""
-    pdf, _cover, _fields = await read_upload_form(request)
-    data = await read_pdf(pdf)
+async def stage_response(user: CurrentUser, data: bytes) -> ApiResponse:
+    """Prepara el PDF `data` (ver `staged_uploads.prepare_stage`) y arma la respuesta 201 de
+    `POST /books/stage`: el `stageId`, el análisis, la portada (JPEG en base64) y si ya existe ese PDF."""
     stage = await prepare_stage(user.id, data)
-    data = None  # el PDF solo queda en la lectura en curso
     portada = stage["portada"]
     same_pdf = await get_db().books.find_one({"hash_pdf": stage["hash"]}, {"_id": 1, "titulo": 1})
     return ApiResponse(
@@ -195,6 +191,63 @@ async def stage_book(request: Request, user: CurrentUser = Depends(can_write)):
         },
         status_code=201,
     )
+
+
+@router.post("/stage")
+async def stage_book(request: Request, user: CurrentUser = Depends(can_write)):
+    """Prepara un PDF: lo recibe una sola vez, propone los datos del libro, dibuja su portada y
+    empieza a leer su texto en segundo plano. Responde 201 con el `stageId`, el análisis y la
+    portada (JPEG en base64); `GET /books/stage/:id` informa el avance de la lectura y
+    `POST /books/upload` con ese `stage_id` guarda el libro sin volver a enviar el PDF.
+    Para PDF grandes el cliente usa `POST /books/stage/uploads` (por fragmentos)."""
+    pdf, _cover, _fields = await read_upload_form(request)
+    return await stage_response(user, await read_pdf(pdf))
+
+
+@router.post("/stage/uploads")
+async def start_chunked_upload(request: Request, user: CurrentUser = Depends(can_write)):
+    """Abre una subida del PDF por fragmentos. Recibe JSON `{nombre, tamano}` (bytes) y responde 201
+    con el `uploadId`, el `tamano_fragmento` y el `total_fragmentos`; cada fragmento se manda con
+    `PUT /books/stage/uploads/:id/:indice` y se cierra con `POST /books/stage/uploads/:id/complete`."""
+    body = await json_body(request)
+    upload = start_upload(user.id, body.get("nombre", ""), body.get("tamano"))
+    return ApiResponse(
+        {
+            "success": True,
+            "data": {
+                "uploadId": upload["id"],
+                "tamano_fragmento": upload["chunk"],
+                "total_fragmentos": upload["total"],
+            },
+        },
+        status_code=201,
+    )
+
+
+@router.put("/stage/uploads/{upload_id}/{index}")
+async def put_upload_chunk(upload_id: str, index: int, request: Request, user: CurrentUser = Depends(can_write)):
+    """Recibe el fragmento `index` (base 0) como cuerpo binario. Se pueden mandar varios a la vez y
+    repetir uno (reintento). Responde cuántos fragmentos llevan recibidos."""
+    upload = get_upload(upload_id, user.id)
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > upload["chunk"]:
+        raise AppError(413, "INVALID_CHUNK", "El fragmento supera el tamaño acordado.")
+    received = add_chunk(upload, index, await request.body())
+    return ApiResponse({"success": True, "data": {"recibidos": received, "total_fragmentos": upload["total"]}})
+
+
+@router.post("/stage/uploads/{upload_id}/complete")
+async def complete_chunked_upload(upload_id: str, user: CurrentUser = Depends(can_write)):
+    """Cierra la subida por fragmentos: une el PDF y lo prepara como `POST /books/stage` (misma respuesta 201)."""
+    data = finish_upload(get_upload(upload_id, user.id))
+    return await stage_response(user, data)
+
+
+@router.delete("/stage/uploads/{upload_id}")
+async def cancel_chunked_upload(upload_id: str, user: CurrentUser = Depends(can_write)):
+    """Descarta una subida por fragmentos en curso. No falla si ya no existe."""
+    discard_upload(upload_id, user.id)
+    return ApiResponse({"success": True})
 
 
 @router.get("/stage/{stage_id}")
@@ -384,8 +437,7 @@ async def get_text(book_id: str, _user: CurrentUser = Depends(authenticate)):
     book = await get_db().books.find_one({"_id": to_object_id(book_id)}, {"titulo": 1, "contenido_escaneado": 1})
     if not book:
         raise AppError(404, "BOOK_NOT_FOUND", "Libro no encontrado")
-    pages = sorted(book.get("contenido_escaneado") or [], key=lambda p: p["pagina"])
-    paginas = [{"pagina": p["pagina"], "texto": p.get("texto", "")} for p in pages]
+    paginas = await read_pages(book["_id"], book.get("contenido_escaneado"))
     return ApiResponse(
         {
             "success": True,
@@ -434,7 +486,9 @@ async def get_page(book_id: str, numero: str):
     result = next(iter(await cursor.to_list(1)), None)
     if not result:
         raise AppError(404, "BOOK_NOT_FOUND", "Libro no encontrado")
-    if not result.get("contenido"):
+    # Libros nuevos: la página vive en `book_pages`. Los anteriores la traen dentro del propio libro.
+    text = result["contenido"].get("texto", "") if result.get("contenido") else await read_page_text(object_id, number)
+    if text is None:
         raise AppError(404, "PAGE_NOT_FOUND", f"El libro no tiene la página {number}.", total_paginas=result["total_paginas"])
 
     total = result["total_paginas"]
@@ -448,7 +502,7 @@ async def get_page(book_id: str, numero: str):
                 "libro_id": str(result["_id"]),
                 "titulo": result["titulo"],
                 "pagina": number,
-                "texto": result["contenido"].get("texto", ""),
+                "texto": text,
                 "total_paginas": total,
                 "inicio_contenido": inicio or None,
                 "anterior": number - 1 if number > 1 else None,
@@ -522,7 +576,7 @@ async def update_book(book_id: str, request: Request, user: CurrentUser = Depend
 
 @router.delete("/{book_id}")
 async def delete_book(book_id: str, user: CurrentUser = Depends(can_write)):
-    """Elimina el libro con todas sus páginas, su portada y lo que apunta a él (solo quien lo
+    """Elimina el libro con todas sus páginas (también las de `book_pages`), su portada y lo que apunta a él (solo quien lo
     subió o un admin)."""
     object_id = to_object_id(book_id)
     # El filtro de dueño va en el propio borrado, así permiso y borrado son una sola operación.
@@ -534,6 +588,7 @@ async def delete_book(book_id: str, user: CurrentUser = Depends(can_write)):
         await load_managed_book(object_id, user, {"subido_por": 1})
         raise AppError(404, "BOOK_NOT_FOUND", "Libro no encontrado")
     await remove_book_references(deleted["_id"])
+    await delete_pages(deleted["_id"])
     # El libro ya no existe; si la imagen no se puede borrar solo queda un archivo suelto.
     try:
         await delete_cover((deleted.get("portada") or {}).get("archivo"))

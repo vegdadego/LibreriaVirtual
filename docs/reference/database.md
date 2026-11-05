@@ -17,7 +17,8 @@ Esquema de la colección (sin modelo ODM; el backend en Python usa documentos y 
 | `categorias` | [String] | Texto libre; no existe colección de categorías. `GET /books/categorias` devuelve las que están en uso. |
 | `autores` | [{ `id_autor?`, `nombre` }] | `id_autor` se rellena si el autor existe en `authors`. |
 | `saga` | { `id_saga?`, `nombre_saga`, `numero_en_saga` } | |
-| `contenido_escaneado` | [{ `pagina`, `texto` }] | Texto de cada página, en orden, con `pagina` desde 1. Va embebido en el libro. |
+| `total_paginas` | Number | Cuántas páginas tiene el libro (sus textos están en la colección `book_pages`). Los libros anteriores no lo tienen: se cuentan desde `contenido_escaneado`. |
+| `contenido_escaneado` | [{ `pagina`, `texto` }] | **Solo en libros anteriores al [ADR 0012](../adr/0012-paginas-aparte-y-subida-por-fragmentos.md)**, que llevaban el texto dentro del documento. Los libros nuevos no lo tienen; `python -m scripts.migrate_pages` lo pasa a `book_pages` y lo borra. Mientras tanto la API lo sigue leyendo. |
 | `portada` | { `archivo`, `mime`, `data?` } | Opcional. `archivo` es el nombre (`<id del libro>.jpg/png/webp`) de la imagen en `backend/uploads/portadas`; `mime` su formato (JPEG, PNG o WebP, hasta 512 KB, ver [ADR 0002](../adr/0002-portada-renderizada-en-el-cliente.md) y [ADR 0005](../adr/0005-portadas-en-disco.md)). `data` (Buffer) solo existe en libros anteriores, que guardaban la imagen en el documento: `python -m scripts.migrate_covers` la pasa a disco y la borra. |
 | `subido_por` | ObjectId → `users` | Quien subió el libro: es el único (junto con un `admin`) que puede editarlo o eliminarlo. Opcional: los libros anteriores a este campo no lo tienen; `python -m scripts.assign_owner <usuario>` se lo asigna a un usuario (ver [ADR 0009](../adr/0009-propiedad-de-libros.md)). No viaja en las respuestas de la API. Índice `{ subido_por, createdAt }`. |
 | `hash_pdf` | String | SHA-256 del PDF con que se subió el libro (los anteriores no lo tienen); sirve para rechazar el mismo archivo subido otra vez. No viaja en la API. Índice disperso. |
@@ -26,17 +27,30 @@ Esquema de la colección (sin modelo ODM; el backend en Python usa documentos y 
 
 ### Cambio: `texto` puede ser vacío
 
-`contenido_escaneado.texto` puede ser la cadena vacía: una página en blanco (o con solo imágenes) se guarda con `texto: ""`, así un libro de 30 páginas siempre guarda sus 30 entradas y no pierde la numeración.
+El `texto` de una página puede ser la cadena vacía: una página en blanco (o con solo imágenes) se guarda con `texto: ""`, así un libro de 30 páginas siempre guarda sus 30 páginas y no pierde la numeración.
 
 ### Límite de tamaño
 
-Como las páginas están dentro del documento, el libro no puede superar los 16 MB que MongoDB permite por documento. La carga rechaza el PDF con `CONTENT_TOO_LARGE` si el texto extraído pasa de 15 MB (un libro típico de 500 páginas ocupa unos 1–2 MB). La portada ya no cuenta: vive en disco; se rechaza con `COVER_TOO_LARGE` si pasa de 512 KB.
+El texto ya no va dentro del libro, así que no choca con los 16 MB que MongoDB permite por documento. La carga rechaza el PDF con `CONTENT_TOO_LARGE` si el texto extraído pasa de `MAX_CONTENT_MB` (64 MB por defecto; un libro típico de 500 páginas ocupa unos 1–2 MB). La portada vive en disco; se rechaza con `COVER_TOO_LARGE` si pasa de 512 KB.
 
 ### Cómo se consulta
 
-- Catálogo y detalle usan agregaciones que **excluyen** `contenido_escaneado` y `portada`, y calculan `total_paginas` con `$size` y `tiene_portada` según `portada.mime` (constantes en `backend/app/services/book_queries.py`).
-- Una página se obtiene con `$filter` sobre `contenido_escaneado`: solo ese texto viaja al servidor de la API.
+- Catálogo y detalle usan agregaciones que **excluyen** `contenido_escaneado` y `portada`, y toman `total_paginas` del propio libro (o, en los anteriores, el `$size` de `contenido_escaneado`) y `tiene_portada` según `portada.mime` (constantes en `backend/app/services/book_queries.py`).
+- Una página se obtiene con un `find_one` por `{ libro, pagina }` en `book_pages` (índice único); en un libro anterior, con `$filter` sobre `contenido_escaneado`. Solo ese texto viaja al servidor de la API.
 - Duplicados: se busca `titulo` + `numero_edicion` + `idioma` con colación `en` de fuerza 1 (sin mayúsculas ni diacríticos; la `ñ` cuenta como `n`). No hay índice único; la protección contra cargas simultáneas vive en el registro de cargas en memoria (ver [ADR 0001](../adr/0001-extraccion-pdf-en-memoria.md)).
+
+## Colección `book_pages`
+
+Una página de un libro por documento (ver [ADR 0012](../adr/0012-paginas-aparte-y-subida-por-fragmentos.md)). Código: `backend/app/services/book_pages.py`.
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `libro` | ObjectId → `books` | El libro al que pertenece. |
+| `pagina` | Number | Número de página desde 1. Índice único `{ libro, pagina }`. |
+| `texto` | String | Texto de la página (puede ser `""`). |
+
+- Se escribe **por lotes** de hasta 100 páginas o 2 MB, uno tras otro, y el documento del libro se crea al final: mientras el libro no existe nadie lo ve a medias. Si algo falla se borran las páginas ya escritas.
+- Al borrar un libro se borran sus páginas. Si el servidor se cae justo entre los lotes y el libro pueden quedar páginas sin libro; `python -m scripts.migrate_pages --orphans` las limpia.
 
 ## Colección `user_books`
 

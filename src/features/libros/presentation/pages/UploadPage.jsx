@@ -416,7 +416,7 @@ export default function UploadPage() {
                   type="text"
                   value={form.autores}
                   onChange={setField('autores')}
-                  placeholder="Separados por coma"
+                  placeholder="Separados por coma (o por «;» si el nombre lleva coma: Apellido, Nombre)"
                 />
               </label>
               <div className="field field-wide" role="group" aria-labelledby="categorias-label">

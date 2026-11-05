@@ -28,15 +28,32 @@ def _configure_dns() -> None:
         dns.resolver.default_resolver = resolver
 
 
+def _pool_size() -> int:
+    """Conexiones máximas del cliente (`MONGO_MAX_POOL_SIZE`, 20 por defecto). Tenerlas acotadas es
+    lo que impide que muchas cargas simultáneas abran conexiones sin límite contra MongoDB."""
+    try:
+        value = int(os.environ.get("MONGO_MAX_POOL_SIZE", ""))
+    except ValueError:
+        return 20
+    return value if value > 0 else 20
+
+
 async def connect(uri: str | None = None) -> AsyncDatabase:
-    """Conecta usando `MONGO_URI` (o `uri`) y deja la base lista para `get_db()`."""
+    """Conecta usando `MONGO_URI` (o `uri`) y deja la base lista para `get_db()`.
+
+    El cliente es único para todo el proceso (patrón *singleton*): todas las peticiones comparten
+    su grupo de conexiones. Llamar a `connect` otra vez con la conexión abierta devuelve la misma
+    base sin crear otro cliente.
+    """
     global _client, _db
+    if _client is not None and _db is not None:
+        return _db
     uri = uri or os.environ.get("MONGO_URI")
     if not uri:
         raise RuntimeError("Falta MONGO_URI. Defínela en backend/.env (ver backend/.env.example).")
     _configure_dns()
     # 30 s es lo que esperaba el backend anterior; Atlas a veces tarda en elegir el primario.
-    _client = AsyncMongoClient(uri, serverSelectionTimeoutMS=30000)
+    _client = AsyncMongoClient(uri, serverSelectionTimeoutMS=30000, maxPoolSize=_pool_size())
     await _client.admin.command("ping")
     try:
         _db = _client.get_default_database()
@@ -74,6 +91,7 @@ async def ensure_indexes(db: AsyncDatabase | None = None) -> None:
         ("users", [("correo", ASCENDING)], {"unique": True}),
         ("authors", [("nombre", ASCENDING)], {"unique": True}),
         ("sagas", [("nombre", ASCENDING)], {"unique": True}),
+        ("book_pages", [("libro", ASCENDING), ("pagina", ASCENDING)], {"unique": True}),
         ("user_books", [("usuario", ASCENDING), ("libro", ASCENDING)], {"unique": True}),
         ("user_books", [("usuario", ASCENDING), ("guardado", ASCENDING), ("guardado_en", DESCENDING)], {}),
         ("user_books", [("usuario", ASCENDING), ("ultima_lectura", DESCENDING)], {}),

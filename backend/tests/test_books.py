@@ -103,7 +103,8 @@ async def test_full_flow_upload_30_pages_catalog_and_read_page_by_page(client, d
     assert "contenido_escaneado" not in detail["data"]
 
     stored = await database.books.find_one({"_id": ObjectId(job["libro_id"])})
-    assert len(stored["contenido_escaneado"]) == 30  # el texto completo está en la BD
+    assert "contenido_escaneado" not in stored and stored["total_paginas"] == 30
+    assert await database.book_pages.count_documents({"libro": stored["_id"]}) == 30  # el texto está en book_pages
 
     for n in range(1, 31):
         status, body = await api(client, f"/books/{job['libro_id']}/paginas/{n}")
@@ -323,7 +324,7 @@ async def test_only_the_owner_or_an_admin_can_edit_and_delete_a_book(client, dat
     other = make_token("uploader")
     admin = make_token("admin")
 
-    sent = await upload(client, token=owner, pdf=make_numbered_pdf(2), fields={"titulo": "Libro con dueño"})
+    sent = await upload(client, token=owner, pdf=make_numbered_pdf(41), fields={"titulo": "Libro con dueño"})
     job = await wait_for_job(client, sent.json()["data"]["jobId"], owner)
     book_id = job["libro_id"]
     stored = await database.books.find_one({"_id": ObjectId(book_id)}, {"subido_por": 1})
@@ -443,7 +444,7 @@ async def test_staged_upload_sends_the_pdf_once_and_saves_the_book_from_the_stag
     job = await wait_for_job(client, sent.json()["data"]["jobId"], owner)
     assert job["estado"] == "completado"
     stored = await database.books.find_one({"_id": ObjectId(job["libro_id"])})
-    assert len(stored["contenido_escaneado"]) == 10
+    assert await database.book_pages.count_documents({"libro": stored["_id"]}) == 10
     assert stored["subido_por"] == ObjectId(owner_id)
     assert (uploads_dir / "portadas" / stored["portada"]["archivo"]).exists(), "la portada del PDF se guardó en disco"
 
@@ -459,13 +460,13 @@ async def test_staged_upload_cover_options_and_unknown_stage(client):
     assert missing.status_code == 404 and missing.json()["code"] == "STAGE_NOT_FOUND"
 
     # Sin `usar_portada_pdf` el libro no lleva la portada del PDF.
-    prepared, _ = await stage_pdf(client, owner, make_numbered_pdf(3))
+    prepared, _ = await stage_pdf(client, owner, make_numbered_pdf(45))
     bare = await upload(client, token=owner, fields={"stage_id": prepared["stageId"], "titulo": "Preparado sin portada"})
     job = await wait_for_job(client, bare.json()["data"]["jobId"], owner)
     assert (await api(client, f"/books/{job['libro_id']}"))[1]["data"]["tiene_portada"] is False
 
     # Una portada propia gana sobre la del PDF.
-    prepared, _ = await stage_pdf(client, owner, make_numbered_pdf(4))
+    prepared, _ = await stage_pdf(client, owner, make_numbered_pdf(46))
     own = await upload(
         client,
         token=owner,
@@ -479,11 +480,11 @@ async def test_staged_upload_cover_options_and_unknown_stage(client):
 
 async def test_staged_upload_keeps_the_stage_after_a_duplicate_title_and_can_be_discarded(client):
     owner = make_token("uploader")
-    prepared, _ = await stage_pdf(client, owner, make_numbered_pdf(2))
+    prepared, _ = await stage_pdf(client, owner, make_numbered_pdf(42))
     first = await upload(client, token=owner, fields={"stage_id": prepared["stageId"], "titulo": "Título repetido preparado"})
     assert (await wait_for_job(client, first.json()["data"]["jobId"], owner))["estado"] == "completado"
 
-    prepared, _ = await stage_pdf(client, owner, make_numbered_pdf(5))
+    prepared, _ = await stage_pdf(client, owner, make_numbered_pdf(47))
     stage_id = prepared["stageId"]
     clash = await upload(client, token=owner, fields={"stage_id": stage_id, "titulo": "título REPETIDO preparado"})
     assert clash.status_code == 409 and clash.json()["code"] == "DUPLICATE_BOOK"
@@ -493,7 +494,7 @@ async def test_staged_upload_keeps_the_stage_after_a_duplicate_title_and_can_be_
     assert fixed.status_code == 202
     assert (await wait_for_job(client, fixed.json()["data"]["jobId"], owner))["estado"] == "completado"
 
-    prepared, _ = await stage_pdf(client, owner, make_numbered_pdf(2))
+    prepared, _ = await stage_pdf(client, owner, make_numbered_pdf(43))
     stage_id = prepared["stageId"]
     assert (await api(client, f"/books/stage/{stage_id}", method="DELETE", token=owner))[0] == 200
     assert (await api(client, f"/books/stage/{stage_id}", token=owner))[1]["code"] == "STAGE_NOT_FOUND"
@@ -536,7 +537,7 @@ async def test_content_start_is_stored_on_upload_and_computed_once_for_older_boo
     assert (await api(client, f"/books/{plain['_id']}/paginas/1"))[1]["data"]["inicio_contenido"] is None
 
     # Al subir un PDF el campo se calcula y se guarda (0 = nada que saltar).
-    sent = await upload(client, token=UPLOADER, pdf=make_numbered_pdf(3), fields={"titulo": "Inicio al subir"})
+    sent = await upload(client, token=UPLOADER, pdf=make_numbered_pdf(44), fields={"titulo": "Inicio al subir"})
     job = await wait_for_job(client, sent.json()["data"]["jobId"], UPLOADER)
     assert (await database.books.find_one({"_id": ObjectId(job["libro_id"])}))["inicio_contenido"] == 0
 

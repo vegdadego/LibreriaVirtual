@@ -2,6 +2,7 @@
 
 - Estado: aceptado; **los puntos 1 y 2 (multer y pdf.js) los reemplaza el [ADR 0007](0007-backend-python.md)** al pasar el backend a Python. El resto (cargas asíncronas, inserción atómica, duplicados, permisos) sigue vigente.
 - Nota: el [ADR 0010](0010-subida-unica-con-preparacion.md) añade una preparación previa: el PDF espera en RAM solo hasta leer su texto, y el texto extraído queda en memoria hasta guardar el libro. La decisión de no conservar el PDF sigue vigente.
+- Nota: el [ADR 0012](0012-paginas-aparte-y-subida-por-fragmentos.md) saca el texto del documento del libro (colección `book_pages`, escritura por lotes), por lo que ya no hay tope de 16 MB ni inserción de un único documento; la atomicidad pasa a "las páginas primero y el libro al final, con limpieza si falla".
 - Fecha: 2026-10-14
 
 ## Contexto y problema

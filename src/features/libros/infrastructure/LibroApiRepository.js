@@ -2,6 +2,7 @@ import { LibroRepository } from '../domain/repositories/LibroRepository';
 import { Libro, PaginaLibro } from '../domain/models/Libro';
 import apiClient from '../../../services/api/apiClient';
 import { ENDPOINTS } from '../../../services/api/endpoints';
+import { enviarFragmentos, UMBRAL_FRAGMENTOS } from './subidaFragmentada';
 
 /**
  * Convierte un libro del backend (`GET /books`) en la entidad de dominio.
@@ -156,10 +157,44 @@ export class LibroApiRepository extends LibroRepository {
    * }>}
    */
   async stage(pdf, { onProgress, signal } = {}) {
+    // Un PDF grande viaja en fragmentos (varios a la vez, con reintentos); uno pequeño, de una vez.
+    if (pdf.size > UMBRAL_FRAGMENTOS) return this.stageInChunks(pdf, { onProgress, signal });
     const form = new FormData();
     form.append('pdf', pdf, pdf.name);
     const res = await apiClient.postFormWithProgress(ENDPOINTS.BOOKS.STAGE, form, { onProgress, signal });
     return res.data;
+  }
+
+  /**
+   * Como `stage`, pero parte el PDF en fragmentos (`POST /books/stage/uploads`, un `PUT` por
+   * fragmento y `.../complete`). Si algo falla descarta la subida abierta en el servidor.
+   *
+   * @param {File} pdf
+   * @param {{onProgress?: Function, signal?: AbortSignal}} [options]
+   * @returns {ReturnType<LibroApiRepository['stage']>}
+   */
+  async stageInChunks(pdf, { onProgress, signal } = {}) {
+    const abierta = await apiClient.post(ENDPOINTS.BOOKS.STAGE_UPLOADS, { nombre: pdf.name, tamano: pdf.size });
+    const { uploadId, tamano_fragmento: tamano, total_fragmentos: total } = abierta.data;
+    try {
+      await enviarFragmentos({
+        total,
+        bytesDe: (indice) => Math.min(tamano, pdf.size - indice * tamano),
+        onProgress,
+        signal,
+        enviar: (indice, alAvanzar) =>
+          apiClient.putBinary(ENDPOINTS.BOOKS.STAGE_UPLOAD_CHUNK(uploadId, indice), pdf.slice(indice * tamano, (indice + 1) * tamano), {
+            onProgress: ({ cargado }) => alAvanzar(cargado),
+            signal,
+          }),
+      });
+      // Unir el PDF, analizarlo y dibujar su portada puede tardar: se espera como en la subida directa.
+      const res = await apiClient.post(ENDPOINTS.BOOKS.STAGE_UPLOAD_COMPLETE(uploadId), {}, {}, { timeout: 600000 });
+      return res.data;
+    } catch (error) {
+      apiClient.delete(ENDPOINTS.BOOKS.STAGE_UPLOAD(uploadId)).catch(() => {});
+      throw error;
+    }
   }
 
   /**

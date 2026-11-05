@@ -11,8 +11,9 @@ from ..db import LOOSE_COLLATION, get_db
 from ..errors import AppError
 from ..http import utcnow
 from ..security import CurrentUser
-from ..text_utils import fold_text, parse_list
+from ..text_utils import clean_text, fold_text, parse_list
 from .analysis.content_start import detect_content_start
+from .book_pages import delete_pages, insert_pages
 from .cover_storage import delete_cover, save_cover
 
 
@@ -64,13 +65,15 @@ def parse_book_metadata(body: dict | None = None, *, partial: bool = False) -> d
     if has("titulo") or not partial:
         if _is_blank(body.get("titulo")):
             raise AppError(400, "INVALID_METADATA", "El título del libro es obligatorio.")
-        meta["titulo"] = str(body["titulo"]).strip()
+        meta["titulo"] = clean_text(body["titulo"])
+        if not meta["titulo"]:  # solo había caracteres de control
+            raise AppError(400, "INVALID_METADATA", "El título del libro es obligatorio.")
     if has("sinopsis"):
-        meta["sinopsis"] = str(body["sinopsis"]).strip()
+        meta["sinopsis"] = clean_text(body["sinopsis"], multiline=True)
     if has("idioma") and not _is_blank(body["idioma"]):
-        meta["idioma"] = str(body["idioma"]).strip()
+        meta["idioma"] = clean_text(body["idioma"])
     if has("empresa_edicion"):
-        meta["empresa_edicion"] = str(body["empresa_edicion"]).strip()
+        meta["empresa_edicion"] = clean_text(body["empresa_edicion"])
     if has("numero_edicion") and not _is_blank(body["numero_edicion"]):
         meta["numero_edicion"] = _to_positive_int(body["numero_edicion"], "numero_edicion")
     if has("fecha_publicacion") and not _is_blank(body["fecha_publicacion"]):
@@ -88,7 +91,7 @@ def parse_book_metadata(body: dict | None = None, *, partial: bool = False) -> d
             None
             if _is_blank(name)
             else {
-                "nombre_saga": str(name).strip(),
+                "nombre_saga": clean_text(name),
                 "numero_en_saga": 1 if _is_blank(number) else _to_positive_int(number, "numero_en_saga"),
             }
         )
@@ -171,8 +174,9 @@ def duplicate_error(existing: dict) -> AppError:
     )
 
 
-def new_book_document(meta: dict, pages: list[dict] | None = None) -> dict:
-    """Documento de libro con los valores por defecto del esquema."""
+def new_book_document(meta: dict, total_pages: int = 0) -> dict:
+    """Documento de libro con los valores por defecto del esquema. Las páginas no van dentro:
+    se guardan aparte (`book_pages`) y aquí solo queda su cuenta, `total_paginas`."""
     now = utcnow()
     return {
         "fecha_publicacion": None,
@@ -183,7 +187,7 @@ def new_book_document(meta: dict, pages: list[dict] | None = None) -> dict:
         "categorias": [],
         "autores": [],
         "saga": None,
-        "contenido_escaneado": pages or [],
+        "total_paginas": total_pages,
         **meta,
         "createdAt": now,
         "updatedAt": now,
@@ -197,15 +201,19 @@ async def save_book_with_pages(
     owner_id: ObjectId | None = None,
     content_hash: str | None = None,
 ) -> dict:
-    """Registra un libro con todas sus páginas en una sola inserción (un único documento, así
-    la operación es atómica). La portada se escribe en disco antes de guardar y se borra si el
-    guardado falla. `owner_id` es quien lo sube (`subido_por`). Lanza `DUPLICATE_BOOK` (409) si
-    el libro ya está registrado (ver `find_duplicate_book`); `content_hash` es el SHA-256 del PDF."""
+    """Registra un libro con todas sus páginas.
+
+    Las páginas se escriben primero, por lotes (`book_pages.insert_pages`), y el libro al final:
+    mientras el libro no existe nadie puede verlo a medias. Si algo falla se borran las páginas
+    ya escritas y la portada. `owner_id` es quien lo sube (`subido_por`). Lanza `DUPLICATE_BOOK`
+    (409) si el libro ya está registrado (ver `find_duplicate_book`); `content_hash` es el
+    SHA-256 del PDF.
+    """
     duplicate = await find_duplicate_book(meta, content_hash=content_hash)
     if duplicate:
         raise duplicate_error(duplicate)
 
-    document = new_book_document(await resolve_relations(meta), pages)
+    document = new_book_document(await resolve_relations(meta), len(pages))
     if owner_id is not None:
         document["subido_por"] = owner_id
     if content_hash:
@@ -217,8 +225,11 @@ async def save_book_with_pages(
     if cover:
         document["portada"] = await save_cover(document["_id"], cover["data"], cover["mime"])
     try:
+        await insert_pages(document["_id"], pages)
         await get_db().books.insert_one(document)
-    except Exception:
+    except BaseException:
+        # También si se cancela la carga: no deben quedar páginas ni portada huérfanas.
+        await delete_pages(document["_id"])
         if cover:
             await delete_cover(document["portada"]["archivo"])
         raise

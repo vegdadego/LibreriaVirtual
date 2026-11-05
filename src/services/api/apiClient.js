@@ -112,11 +112,18 @@ class ApiClient {
     return this.request(endpoint, { method: 'GET', headers, ...options });
   }
 
-  post(endpoint, body, headers = {}) {
+  /**
+   * @param {string} endpoint
+   * @param {any} body Se envía como JSON.
+   * @param {Record<string, string>} [headers]
+   * @param {{timeout?: number}} [options] `timeout` en ms, para respuestas lentas.
+   */
+  post(endpoint, body, headers = {}, options = {}) {
     return this.request(endpoint, {
       method: 'POST',
       body: JSON.stringify(body),
       headers,
+      ...options,
     });
   }
 
@@ -143,12 +150,46 @@ class ApiClient {
    * @param {AbortSignal} [options.signal] Cancela la subida (el error tiene `status` 499).
    * @returns {Promise<any>}
    */
-  postFormWithProgress(endpoint, formData, { onProgress, signal } = {}) {
+  postFormWithProgress(endpoint, formData, options = {}) {
+    return this.sendWithProgress('POST', endpoint, formData, options);
+  }
+
+  /**
+   * Manda un fragmento de archivo como cuerpo binario (`PUT`, `application/octet-stream`),
+   * informando su avance. Es lo que usa la subida por fragmentos de un PDF grande.
+   *
+   * @param {string} endpoint
+   * @param {Blob} blob Fragmento.
+   * @param {Object} [options] Igual que en `postFormWithProgress`.
+   * @returns {Promise<any>}
+   */
+  putBinary(endpoint, blob, options = {}) {
+    return this.sendWithProgress('PUT', endpoint, blob, {
+      ...options,
+      headers: { 'Content-Type': 'application/octet-stream' },
+    });
+  }
+
+  /**
+   * Petición con `XMLHttpRequest` que informa el avance de la subida. Los errores son `ApiError`
+   * (`status` 0 sin conexión, 408 por tiempo agotado, 499 si se cancela).
+   *
+   * @param {string} method
+   * @param {string} endpoint
+   * @param {FormData|Blob} body
+   * @param {Object} [options]
+   * @param {(avance: {cargado: number, total: number}) => void} [options.onProgress]
+   * @param {AbortSignal} [options.signal]
+   * @param {Record<string, string>} [options.headers] Encabezados extra (por ejemplo `Content-Type`).
+   * @returns {Promise<any>}
+   */
+  sendWithProgress(method, endpoint, body, { onProgress, signal, headers = {} } = {}) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', this.url(endpoint));
+      xhr.open(method, this.url(endpoint));
       xhr.timeout = 600000;
       xhr.setRequestHeader('Accept', 'application/json');
+      Object.entries(headers).forEach(([name, value]) => xhr.setRequestHeader(name, value));
       const token = this.getToken();
       if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
@@ -179,7 +220,7 @@ class ApiClient {
         }
         signal.addEventListener('abort', () => xhr.abort(), { once: true });
       }
-      xhr.send(formData);
+      xhr.send(body);
     });
   }
 

@@ -44,8 +44,11 @@ class Limits:
     job_ttl_seconds: int
     #: Cuánto se conserva una preparación (PDF ya leído, a la espera de los datos del formulario).
     stage_ttl_seconds: int
-    #: MongoDB limita cada documento a 16 MB; el texto va embebido en el libro.
+    #: Tope del texto extraído de un libro. Las páginas se guardan en documentos aparte
+    #: (ADR 0012), así que ya no choca con los 16 MB por documento de MongoDB: solo protege el tamaño de la base.
     max_content_bytes: int
+    #: Tamaño de cada fragmento con que el navegador sube un PDF grande.
+    chunk_bytes: int
     #: Procesos que leen PDF en paralelo.
     pdf_workers: int
     #: Desde cuántas páginas un PDF se reparte entre varios procesos.
@@ -60,7 +63,8 @@ def get_limits() -> Limits:
         concurrency=_positive_int("UPLOAD_CONCURRENCY", 2),
         job_ttl_seconds=_positive_int("JOB_TTL_MINUTES", 60) * 60,
         stage_ttl_seconds=_positive_int("STAGE_TTL_MINUTES", 20) * 60,
-        max_content_bytes=15 * 1024 * 1024,
+        max_content_bytes=_positive_int("MAX_CONTENT_MB", 64) * 1024 * 1024,
+        chunk_bytes=_positive_int("UPLOAD_CHUNK_KB", 4096) * 1024,
         pdf_workers=_positive_int("PDF_WORKERS", max(1, min(6, (os.cpu_count() or 2) - 1))),
         parallel_min_pages=_positive_int("PDF_PARALLEL_MIN_PAGES", 120),
     )

@@ -6,9 +6,11 @@ from bson import ObjectId
 
 from ..db import LOOSE_COLLATION, get_db
 from .analysis.content_start import detect_content_start
+from .book_pages import read_pages
 
-#: Número de páginas guardadas de un libro.
-PAGE_COUNT = {"$size": {"$ifNull": ["$contenido_escaneado", []]}}
+#: Número de páginas de un libro: el `total_paginas` guardado o, en los libros anteriores a
+#: `book_pages`, el tamaño de su `contenido_escaneado`.
+PAGE_COUNT = {"$ifNull": ["$total_paginas", {"$size": {"$ifNull": ["$contenido_escaneado", []]}}]}
 #: Indica si el libro tiene portada, sin traer la imagen.
 HAS_COVER = {"$cond": [{"$ifNull": ["$portada.mime", False]}, True, False]}
 #: Campos calculados que acompañan a los metadatos de un libro.
@@ -37,13 +39,14 @@ async def ensure_content_start(book_id: ObjectId) -> int:
     """`inicio_contenido` de un libro (0 si no se detectó), calculándolo y guardándolo la primera vez.
 
     Los libros subidos antes de que existiera el campo no lo tienen; aquí se calcula con su texto
-    ya guardado, una sola vez, sin tocar `updatedAt`."""
+    ya guardado (en `book_pages` o, en los libros anteriores, dentro del libro), una sola vez,
+    sin tocar `updatedAt`."""
     book = await get_db().books.find_one({"_id": book_id}, {"inicio_contenido": 1, "contenido_escaneado": 1})
     if not book:
         return 0
     if book.get("inicio_contenido") is not None:
         return book["inicio_contenido"]
-    start = detect_content_start(book.get("contenido_escaneado") or []) or 0
+    start = detect_content_start(await read_pages(book_id, book.get("contenido_escaneado"))) or 0
     await get_db().books.update_one({"_id": book_id}, {"$set": {"inicio_contenido": start}})
     return start
 

@@ -32,9 +32,40 @@ def fold_text(value: Any) -> str:
     return "".join(c for c in decomposed if unicodedata.category(c) != "Mn").lower().strip()
 
 
+#: Caracteres de control que no son texto (nulos, escapes...). Se conservan el tabulador y el salto de línea.
+_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+_LINE_BREAKS = re.compile(r"\s*[\n\t]\s*")
+_LIST_SEPARATORS = re.compile(r"[;\n]")
+
+
+def clean_text(value: Any, *, multiline: bool = False) -> str:
+    """Texto escrito por una persona (título, autor, sinopsis...) listo para guardarse.
+
+    Permite cualquier carácter imprimible: acentos, ñ, signos como ¿ ¡ « » & # + / ' ", símbolos,
+    otros alfabetos y emojis. Solo se normaliza a NFC (así «é» se guarda igual venga como una letra
+    o como dos), se quitan los caracteres de control y los sustitutos sueltos, que no se pueden
+    codificar, y se recortan los extremos. Sin `multiline` los saltos de línea y tabuladores
+    pasan a un espacio (un título es de una sola línea).
+    """
+    text = str(value).replace("\r\n", "\n").replace("\r", "\n")
+    text = text.encode("utf-8", "replace").decode("utf-8")
+    text = _CONTROL_CHARS.sub("", unicodedata.normalize("NFC", text))
+    if not multiline:
+        text = _LINE_BREAKS.sub(" ", text)
+    return text.strip()
+
+
+def _split_list_text(text: str) -> list[str]:
+    """Separa una cadena en elementos: por `;` o salto de línea si los hay, si no por comas."""
+    return _LIST_SEPARATORS.split(text) if _LIST_SEPARATORS.search(text) else text.split(",")
+
+
 def parse_list(value: Any) -> list[str]:
-    """Lista de textos desde un arreglo, un JSON de arreglo o una cadena separada por comas
-    (sin vacíos ni repetidos, en orden)."""
+    """Lista de textos desde un arreglo, un JSON de arreglo o una cadena (sin vacíos ni repetidos, en orden).
+
+    En una cadena los elementos se separan por **punto y coma o salto de línea** si los hay (así
+    «García Márquez, Gabriel; Tolkien, J. R. R.» son dos autores con coma dentro) y, si no, por comas.
+    """
     if value is None:
         return []
     items: Any = value
@@ -44,12 +75,12 @@ def parse_list(value: Any) -> list[str]:
             try:
                 items = json.loads(stripped)
             except ValueError:
-                items = stripped.split(",")
+                items = _split_list_text(stripped)
         else:
-            items = stripped.split(",")
+            items = _split_list_text(stripped)
     if not isinstance(items, list):
         items = [items]
-    clean = [str(item).strip() for item in items]
+    clean = [clean_text(item) for item in items]
     return list(dict.fromkeys(item for item in clean if item))
 
 

@@ -50,9 +50,12 @@ export class Libro {
     this.inicioContenido = inicioContenido;
   }
 
-  /** Autores separados por coma, o `''` si no hay. */
+  /**
+   * Autores separados por coma, o `''` si no hay. Si algún nombre lleva coma ("García Márquez, Gabriel")
+   * se separan con punto y coma, que es lo que el servidor entiende al volver a guardarlos.
+   */
   get autoresTexto() {
-    return this.autores.join(', ');
+    return this.autores.join(this.autores.some((nombre) => nombre.includes(',')) ? '; ' : ', ');
   }
 }
 

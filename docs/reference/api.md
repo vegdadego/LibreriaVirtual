@@ -22,6 +22,7 @@ Las rutas marcadas con 🔑 y todas las de `/me/*` exigen sesión con **cualquie
 | `GET /books/duplicado` | 🔒 | Dice si el libro del formulario ya existe (`titulo`, `autores`, `numero_edicion`, `idioma` y, opcional, `stage_id` para comparar también el PDF). Responde `duplicado`: `null` o `{libro_id, titulo}`. |
 | `GET /books/stage/:id` | 🔒 | Avance de la lectura del PDF preparado. Solo su dueño. |
 | `DELETE /books/stage/:id` | 🔒 | Descarta un PDF preparado. |
+| `POST /books/stage/uploads` | 🔒 | Abre una subida del PDF **por fragmentos** (ver abajo); los fragmentos van con `PUT /books/stage/uploads/:id/:indice` y se cierra con `POST /books/stage/uploads/:id/complete`. |
 | `POST /books/upload` | 🔒 | Guarda un libro con el `stage_id` de un PDF preparado (o, sin preparación, con el propio PDF). Responde `202` con un `jobId`. |
 | `GET /books/uploads/:jobId` | 🔒 | Estado de una carga. Solo quien la inició o un `admin`. |
 | `GET /books` | — | Catálogo paginado (sin texto de páginas ni imagen). |
@@ -66,6 +67,21 @@ La respuesta de `POST /books/stage` trae además `duplicado` (`null` o `{libro_i
 ### `DELETE /books/stage/:id`
 
 Descarta la preparación. Responde `200` aunque ya no exista.
+
+### Subida por fragmentos (`/books/stage/uploads`)
+
+Para un PDF grande (el frontend la usa por encima de 4 MB) el archivo se parte en fragmentos y se manda con varias peticiones a la vez; el resultado es el mismo que el de `POST /books/stage` ([ADR 0012](../adr/0012-paginas-aparte-y-subida-por-fragmentos.md)). Todas requieren `uploader` o `admin`.
+
+| Paso | Petición | Respuesta |
+|---|---|---|
+| 1. Abrir | `POST /books/stage/uploads` con JSON `{ "nombre": "libro.pdf", "tamano": 61440000 }` (bytes) | `201` `{ uploadId, tamano_fragmento, total_fragmentos }` |
+| 2. Fragmentos | `PUT /books/stage/uploads/:uploadId/:indice` (`indice` desde 0), cuerpo binario `application/octet-stream` | `200` `{ recibidos, total_fragmentos }` |
+| 3. Cerrar | `POST /books/stage/uploads/:uploadId/complete` | `201`, igual que `POST /books/stage` |
+| Cancelar | `DELETE /books/stage/uploads/:uploadId` | `200`, también si ya no existe |
+
+- Cada fragmento pesa exactamente `tamano_fragmento` bytes (`UPLOAD_CHUNK_KB`, 4 096 KB por defecto) salvo el último, que trae el resto. Se pueden mandar en cualquier orden, varios a la vez, y repetir uno (reintento) lo reemplaza.
+- Cada usuario tiene una sola subida abierta: abrir otra descarta la anterior. Caduca a los `STAGE_TTL_MINUTES`.
+- Errores: `FILE_TOO_LARGE` (413, `tamano` mayor que `MAX_PDF_SIZE_MB`), `INVALID_UPLOAD` (400, `tamano` no válido), `INVALID_CHUNK` (400, índice fuera de rango o tamaño distinto del acordado; 413 si el cuerpo declara más de `tamano_fragmento`), `INVALID_FILE` (415, el primer fragmento no es de un PDF), `INCOMPLETE_UPLOAD` (409, faltan fragmentos; incluye `faltan` con los índices) y `UPLOAD_NOT_FOUND` (404, no existe, caducó, ya se cerró o es de otro usuario).
 
 ### `POST /books/analyze`
 
@@ -223,6 +239,9 @@ Límites: 100 carpetas por usuario, 500 libros por carpeta, nombre de hasta 80 c
 | `UNAUTHENTICATED`, `INVALID_TOKEN` | 401 | Falta el token o es inválido/expiró. |
 | `FORBIDDEN` | 403 | El rol no puede escribir. |
 | `STAGE_NOT_FOUND` | 404 | El PDF preparado no existe, caducó o es de otro usuario. |
+| `UPLOAD_NOT_FOUND` | 404 | La subida por fragmentos no existe, caducó, ya se cerró o es de otro usuario. |
+| `INVALID_CHUNK` | 400 / 413 | Un fragmento fuera de rango, de tamaño distinto del acordado o mayor que `tamano_fragmento`. |
+| `INCOMPLETE_UPLOAD` | 409 | Se cerró la subida por fragmentos con fragmentos sin recibir (`faltan`). |
 | `NOT_BOOK_OWNER` | 403 | El libro lo subió otra persona (o no tiene dueño) y el usuario no es `admin`. |
 | `FILE_REQUIRED` | 400 | No se adjuntó `pdf`. |
 | `INVALID_UPLOAD` | 400 | Archivos en campos distintos de `pdf` y `portada`, o más de uno por campo. |
@@ -246,7 +265,7 @@ Errores que aparecen en `data.error.code` de una carga (estado `error`):
 | `PDF_ENCRYPTED` | PDF protegido con contraseña. |
 | `NO_EXTRACTABLE_TEXT` | Ninguna página tiene texto (PDF escaneado como imágenes; el OCR no está en el MVP). |
 | `TOO_MANY_PAGES` | Más de `MAX_PDF_PAGES` páginas. |
-| `CONTENT_TOO_LARGE` | El texto no cabe en un documento de MongoDB (16 MB). |
+| `CONTENT_TOO_LARGE` | El texto extraído pasa de `MAX_CONTENT_MB` (64 MB por defecto). |
 | `DUPLICATE_BOOK` | Otro libro igual se registró mientras se procesaba. |
 | `STORAGE_ERROR` | Falló el guardado en la base de datos. |
 
@@ -258,3 +277,5 @@ Errores que aparecen en `data.error.code` de una carga (estado `error`):
 - Nuevo: `POST /books/analyze` (autodetección de datos). Las portadas se guardan como archivos en disco y no en la base de datos; la API no cambia.
 - `DELETE /books/:id` también borra los guardados y el progreso de ese libro y lo quita de las carpetas.
 - `POST`, `PUT` y `DELETE` de `/books` requieren sesión de `uploader` o `admin`, y solo aceptan los campos de metadatos.
+- Los textos de un libro (título, autores, editorial, sinopsis, saga, idioma) admiten cualquier carácter imprimible (acentos, `ñ`, `¿¡«»&#+/'"`, otros alfabetos, emojis). Se guardan en NFC y se quitan solo los caracteres de control. En `autores` (y `categorias`) una cadena se separa por `;` o salto de línea si los hay, y si no por comas: `"García Márquez, Gabriel; Tolkien, J. R. R."` son dos autores.
+- Nuevo: subida por fragmentos (`/books/stage/uploads`). Las páginas de los libros nuevos se guardan en la colección `book_pages` y no dentro del libro; la API no cambia.

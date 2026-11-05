@@ -27,8 +27,10 @@ def error(status: int, code: str, message: str) -> dict:
     return {"error": {"status": status, "code": code, "message": message}}
 
 
-#: Glifos vacíos (cuadros, formas, carácter de reemplazo, uso privado) y controles salvo `\n` y `\t`.
-_JUNK_CHARS = re.compile("[�■-◿-\x00-\x08\x0b-\x1f\x7f]")
+#: Glifos vacíos: el carácter de reemplazo (U+FFFD), el cuadro negro de "glifo que falta" (U+25A0), el área de
+#: uso privado (fuentes de iconos) y los controles salvo `\n` y `\t`. Las demás formas geométricas
+#: (● ○ ▪ ◆ ▶ □...) son viñetas y símbolos legítimos y se conservan.
+_JUNK_CHARS = re.compile(r"[\ufffd\u25a0\ue000-\uf8ff\x00-\x08\x0b-\x1f\x7f]")
 #: Puntos guía de los índices ("Capítulo 1 ........ 5"): se acortan, solo importa que haya guía.
 _LEADER_DOTS = re.compile(r"\.{6,}")
 #: Símbolos casi inexistentes en prosa: señal de basura de OCR (`J^OiA`, `\ ;ne> \(r>`).
