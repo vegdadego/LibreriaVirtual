@@ -48,6 +48,7 @@ npm run server:test    # pruebas del backend (pytest con un MongoDB temporal)
 cd backend && .venv\Scripts\python -m scripts.assign_owner <usuario> --dry-run   # libros anteriores sin dueño: sin --dry-run se los asigna a ese usuario
 cd backend && .venv\Scripts\python -m scripts.migrate_covers   # una vez: pasa a disco las portadas guardadas antes en la base de datos
 cd backend && .venv\Scripts\python -m scripts.migrate_pages    # una vez: pasa a la colección book_pages el texto de los libros anteriores (--orphans limpia páginas sin libro)
+cd backend && .venv\Scripts\python -m scripts.import_gutenberg plan   # libros de 30-50 páginas de Gutenberg (ver docs/how-to/importar-libros-gutenberg.md)
 cd backend && .venv\Scripts\python -m scripts.bench_upload     # compara subir un PDF grande completo y por fragmentos (usa un mongod temporal)
 ```
 

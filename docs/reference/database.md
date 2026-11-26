@@ -23,6 +23,7 @@ Esquema de la colección (sin modelo ODM; el backend en Python usa documentos y 
 | `subido_por` | ObjectId → `users` | Quien subió el libro: es el único (junto con un `admin`) que puede editarlo o eliminarlo. Opcional: los libros anteriores a este campo no lo tienen; `python -m scripts.assign_owner <usuario>` se lo asigna a un usuario (ver [ADR 0009](../adr/0009-propiedad-de-libros.md)). No viaja en las respuestas de la API. Índice `{ subido_por, createdAt }`. |
 | `hash_pdf` | String | SHA-256 del PDF con que se subió el libro (los anteriores no lo tienen); sirve para rechazar el mismo archivo subido otra vez. No viaja en la API. Índice disperso. |
 | `inicio_contenido` | Number | Página donde empieza el contenido, tras portada, créditos, índice y prólogo (ver [ADR 0011](../adr/0011-contenido-tablas-y-listas.md)). `0` = no se detectó nada que saltar. Se calcula al subir el libro; los libros anteriores lo reciben la primera vez que se consultan (`ensure_content_start`). |
+| `origen` | { `fuente`, `id`, `lote?`, `min_paginas?`, `max_paginas?` } | Solo en libros importados: `fuente` (`gutenberg`), su `id` allí (evita importarlo dos veces) y la carga a la que pertenece (ver [ADR 0013](../adr/0013-importar-libros-de-gutenberg.md)). |
 | `createdAt`, `updatedAt` | Date | Automáticos. |
 
 ### Cambio: `texto` puede ser vacío
@@ -36,6 +37,7 @@ El texto ya no va dentro del libro, así que no choca con los 16 MB que MongoDB 
 ### Cómo se consulta
 
 - Catálogo y detalle usan agregaciones que **excluyen** `contenido_escaneado` y `portada`, y toman `total_paginas` del propio libro (o, en los anteriores, el `$size` de `contenido_escaneado`) y `tiene_portada` según `portada.mime` (constantes en `backend/app/services/book_queries.py`).
+- En el listado paginado (`catalog_page`), esa exclusión va **antes** del `$sort`: ordenar documentos completos supera los 32 MB de memoria de MongoDB cuando hay libros con el texto dentro (error 292, `QueryExceededMemoryLimitNoDiskUseAllowed`).
 - Una página se obtiene con un `find_one` por `{ libro, pagina }` en `book_pages` (índice único); en un libro anterior, con `$filter` sobre `contenido_escaneado`. Solo ese texto viaja al servidor de la API.
 - Duplicados: se busca `titulo` + `numero_edicion` + `idioma` con colación `en` de fuerza 1 (sin mayúsculas ni diacríticos; la `ñ` cuenta como `n`). No hay índice único; la protección contra cargas simultáneas vive en el registro de cargas en memoria (ver [ADR 0001](../adr/0001-extraccion-pdf-en-memoria.md)).
 

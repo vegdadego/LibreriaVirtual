@@ -367,11 +367,13 @@ async def catalog_page(query: dict[str, str], extra_filter: dict | None = None) 
     cursor = await books.aggregate(
         [
             {"$match": filtro},
+            # Los campos pesados se quitan antes de ordenar: MongoDB ordena en memoria (límite de
+            # 32 MB) y los libros anteriores a `book_pages` llevan todo su texto en el documento.
+            {"$addFields": DERIVED_FIELDS},
+            {"$project": HEAVY_FIELDS},
             {"$sort": {"createdAt": -1, "_id": -1}},
             {"$skip": (page - 1) * limit},
             {"$limit": limit},
-            {"$addFields": DERIVED_FIELDS},
-            {"$project": HEAVY_FIELDS},
         ],
         collation=LOOSE_COLLATION,
     )

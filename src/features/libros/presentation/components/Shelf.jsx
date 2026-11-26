@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronRight } from 'lucide-react';
 import BookCover from './BookCover';
 
 /**
@@ -53,14 +54,21 @@ function ReadingProgress({ book }) {
  * @param {Function} props.onSelect Se invoca con el id del libro elegido.
  * @param {React.ReactNode} [props.leading] Elemento que va antes de los libros (por ejemplo, el libro en blanco).
  * @param {(book: object) => React.ReactNode} [props.renderActions] Controles que se superponen a cada portada.
+ * @param {() => void} [props.onMore] Si se pasa (junto con `title`), muestra «Ver más» junto al título.
  * @returns {JSX.Element} El estante.
  */
-export default function Shelf({ title, books, onSelect, leading, renderActions }) {
+export default function Shelf({ title, books, onSelect, leading, renderActions, onMore }) {
   return (
     <section className="shelf" aria-label={title}>
       {title && (
         <header className="shelf-head">
           <h2 className="shelf-title">{title}</h2>
+          {onMore && (
+            <button type="button" className="shelf-more" onClick={onMore} aria-label={`Ver más de ${title}`}>
+              <span>Ver más</span>
+              <ChevronRight size={15} aria-hidden="true" />
+            </button>
+          )}
         </header>
       )}
 

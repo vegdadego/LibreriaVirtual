@@ -76,7 +76,7 @@ Estructura por funcionalidad (Clean Architecture, ver README): `features/libros`
 
 ### Shelf
 - **Ruta:** `src/features/libros/presentation/components/Shelf.jsx`
-- **Props:** `title` (opcional), `books` (`{ id, titulo, portadaUrl, progress?, leidas?, total? }`), `onSelect(id)`, `leading` (elemento antes de los libros, por ejemplo el libro en blanco) y `renderActions(book)` (controles que se superponen a cada portada, dentro de `.shelf-manage`).
+- **Props:** `title` (opcional), `books` (`{ id, titulo, portadaUrl, progress?, leidas?, total? }`), `onSelect(id)`, `leading` (elemento antes de los libros, por ejemplo el libro en blanco) `renderActions(book)` (controles que se superponen a cada portada, dentro de `.shelf-manage`) y `onMore` (si se pasa junto con `title`, botón «Ver más» en la cabecera, clase `.shelf-more`).
 - Dibuja los libros de pie sobre una tabla de madera, con desplazamiento horizontal si no caben. Cada libro es una tapa dura con canto de páginas a la derecha y bisagra en el lomo. Si `progress` (0-100) está presente, dibuja sobre la parte baja de la portada (`.shelf-reading`) las páginas leídas y el total («120 / 336 págs.»), las que faltan («Faltan 216») y una barra de 10 px; sin `leidas` y `total` solo muestra el porcentaje.
 
 ### BookCover y LibroCard
@@ -84,8 +84,15 @@ Estructura por funcionalidad (Clean Architecture, ver README): `features/libros`
 - `LibroCard`: tarjeta de cuadrícula (`.series-grid`). La portada y el título forman un botón; las acciones (`actions`) quedan sobre la portada. `BookActions` reúne guardar y añadir a carpeta.
 
 ### HomePage
-- Pestaña "Estantes": "Continuar leyendo" (con progreso real), "Guardados para más tarde", "Novedades" y un estante por categoría (hasta 6). Pestaña "Todos": cuadrícula. Muestra estados de carga, error, vacío y sin conexión (`PageState`).
-- **Búsqueda integrada:** la barra de la cabecera es un campo de texto real (sin ventana emergente). Al escribir, `useBusquedaLibros` consulta `GET /books?busqueda=` con 300 ms de retardo y los resultados reemplazan los estantes por una cuadrícula con el total; Escape o la X borran la búsqueda y vuelven los estantes.
+- Pestaña "Estantes": "Continuar leyendo" (con progreso real), "Guardados para más tarde", "Novedades" y un estante por categoría (hasta 6). Cada estante muestra como máximo 30 libros ("Continuar leyendo" hasta 20, que es lo que entrega la API). Las 6 categorías se eligen entre los 100 libros más recientes y `useEstantesPorCategoria` completa cada una con `GET /books?categoria=&limit=30`. Pestaña "Todos": cuadrícula de 50 libros por página con `Pagination`; la vista y la página quedan en la URL (`?vista=todos&pagina=2`), así al volver de un libro se conservan. Muestra estados de carga, error, vacío y sin conexión (`PageState`).
+- **Ver más:** cada estante, además del desplazamiento, tiene un botón junto al título. En una categoría abre su cuadrícula (`?vista=todos&categoria=Humor&pagina=1`), con el nombre, el total, un botón «Estantes» para volver y la misma paginación; en «Novedades» abre «Todos» y en «Guardados para más tarde», `/guardados`. «Continuar leyendo» no lo tiene porque no hay una pantalla con más. La pestaña «Todos» quita el filtro de categoría.
+- Los topes (50 por página, 30 por estante, 6 categorías) y las cuentas de páginas están en `features/libros/domain/paginacion.js` (pruebas en `paginacion.test.js`).
+- **Contador de libros:** bajo la barra de herramientas, «N libros en la biblioteca» (clase `.search-status`). Usa el `total` de `GET /books`, así que cuenta todo el catálogo y no solo los libros cargados. Se actualiza al entrar al inicio o recargar; se oculta durante la búsqueda (que muestra su propio total), la carga y los errores.
+- **Búsqueda integrada:** la barra de la cabecera es un campo de texto real (sin ventana emergente). Al escribir, `useBusquedaLibros` consulta `GET /books?busqueda=` con 300 ms de retardo y los resultados reemplazan los estantes por una cuadrícula con el total, de 50 en 50 con `Pagination`; Escape o la X borran la búsqueda y vuelven los estantes.
+
+### Pagination
+- **Ruta:** `src/features/libros/presentation/components/Pagination.jsx`. **Props:** `page` (desde 1), `pageSize`, `total` y `onChange(page)`.
+- Botones «Anterior» y «Siguiente» con «Página X de Y» y el rango de libros (clases `.pagination*` en `books.css`). Es una barra fija en la parte inferior de la pantalla (`position: fixed`; en escritorio respeta la barra lateral, completa o reducida, y en móvil queda sobre la barra flotante) y reserva su hueco con `.pagination-space`. No se muestra si todo cabe en una página.
 
 ### LibroDetailPage
 - Estructura (clases `.detail-*`): portada, título, autores, páginas y frase inicial de la sinopsis; acciones "Comenzar a leer" / "Continuar en la página N", guardar, añadir a carpeta y descargar; hoja con descripción, categorías y ficha (páginas, idioma, editorial, publicación, saga). Si el libro tiene páginas previas (portada, índice, prólogo) y todavía no se ha leído hasta el contenido, aparece «Ir al contenido (pág. N)», que abre el lector en la página donde empieza (`inicioContenido`, detectado por el servidor); «Comenzar a leer» sigue abriendo donde corresponde.
